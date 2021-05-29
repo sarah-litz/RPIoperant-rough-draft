@@ -1,6 +1,6 @@
 ''' --------------------------------------------------------------------------------------------------------------------------------
                                                     filename: ScriptDriver.py
-                description: this file is imported by MainDriver.py. The startexperiment funciton is called by MainDriver. 
+                description: this file is imported by MainDriver.py. The startexperiment function is called by MainDriver. 
                 Purpose of this file is to perform the inline import of a file based on what the user specified in <inputdf> in the run_scripts folder.
                 If the user entered in a list of scripts to run, that list will be looped thru and executed in that order. 
 -----------------------------------------------------------------------------------------------------------------------------------'''
@@ -19,6 +19,8 @@ def startExperiment(inputdf, outputfp): # (input dataframe, output filepath)
         # then we will transfer control to module of specified script 
         # will potentially need to pass the current row of the dataframe if we need that info to run the script 
 
+        # TODO: before going to the next inputdf['script'], check with the user that they want to run the next script. 
+
     scriptList = inputdf['script'].copy().tolist() # need to make copy() to manipulate 
     print(scriptList)
     count = 0 # counter to loop thru script list 
@@ -35,7 +37,10 @@ def startExperiment(inputdf, outputfp): # (input dataframe, output filepath)
             spec = importlib.util.spec_from_file_location(scriptList[count], 'run_scripts/' + f'{scriptList[count]}.py') # get new module's file specs 
             module = importlib.util.module_from_spec(spec) 
             spec.loader.exec_module(module)
-            module.start()
+
+            # get current row of dataframe 
+            csv_row = inputdf.loc[count]
+            module.start(csv_row)
 
         else: 
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
