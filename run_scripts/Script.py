@@ -21,8 +21,9 @@ class Script():
            then, for each script, if it needs to add more it can override this parent class with a subclass 
     '''
 
-    def __init__(self, key_value_dict):
-        self.key_values = key_value_dict #OrderedDict.fromkeys() # if keyVals that need tracking change, the child class will just have to override this attribute 
+    def __init__(self):
+        pass 
+        # self.key_values #OrderedDict.fromkeys() # if keyVals that need tracking change, the child class will just have to override this attribute 
         # self.pi = pigpio.pi() # initalize pi 
 
     def setup_pins(self): 
