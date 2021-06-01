@@ -18,8 +18,8 @@ class Results():
         
         ''' requires that an output file will get found or created when a new Results instance is made'''
         self.output_file = self.generate_output_file(csv_input, output_dir)
-     
-        
+
+
     ''' --------- Private Methods ----------- '''    
     def generate_output_file(self, csv_input, output_dir): # called at instance declaration only (called from w/in class, no need to call from different module)
             
@@ -43,7 +43,7 @@ class Results():
             defaultfp.mkdir(parents=True, exist_ok=True) # makes directory if it does not exist 
             fp = os.path.join(defaultfp, fname)
         
-        # open file and write header with general experiment information 
+        ''' open file and write header with general experiment information '''
         with open(fp, 'w') as output_file: # output_file is the new file object 
             writer = csv.writer(output_file, delimiter = ',')
         

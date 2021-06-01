@@ -12,24 +12,26 @@ from run_scripts.ResultsClass import Results # manages output data
 class Magazine(Script):  
 
     def __init__(self, csv_input, output_dir): # if no key_val_changes passed in then it defaults to None 
-        
-       
-        ''' INIT DEFAULT KEY VALUES '''
-        ''' define default key values here: '''
-        self.key_values = OrderedDict([('num_rounds', 15), ('round_time',90), 
-                                        ('timeII',2), ('timeIV',2), 
-                                        ('pellet_tone_time',1), ('pellet_tone_hz',2500), 
-                                        ('door_close_tone_hz',7000), ('door_open_tone_time',1), ('door_open_tone_hz',10000),
-                                        ('round_start_tone_time',1), ('round_start_tone_hz',5000)
-                                    ]) 
+               
+        ''' init defautly key values  '''
+        self.key_values = get_key_values()
         
         super().__init__(csv_input, output_dir, self.key_values) # initialize attributes of parent class (defined in Script.py)
-
 
         ''' INIT OUTPUT FILE ''' 
         self.Results = Results(csv_input, output_dir) # Create Results instance
         self.output_file = self.Results.output_file # get newly generated output file from Results 
 
+
+def get_key_values(): 
+    # not defined inside of Magazine class for more accessibility when testing individual scripts 
+    ''' DEFAUTL KEY VALUES DEFINED HERE '''
+    return OrderedDict([('num_rounds', 15), ('round_time',90), 
+                                        ('timeII',2), ('timeIV',2), 
+                                        ('pellet_tone_time',1), ('pellet_tone_hz',2500), 
+                                        ('door_close_tone_hz',7000), ('door_open_tone_time',1), ('door_open_tone_hz',10000),
+                                        ('round_start_tone_time',1), ('round_start_tone_hz',5000)
+                                    ]) 
 
 
 def start(csv_input, outputdir):  # csv_input is the row that corresponds with the current script getting run 
