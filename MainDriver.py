@@ -83,20 +83,6 @@ def main():
     ''' transfer control to ScriptDriver.py '''
     ScriptDriver.startExperiment(inputdf, outputdir)
 
-    # inputdf = InputFile.getInputFile()
-    # if inputdf.empty: print('data frame is empty'); exit() # nothing in file - alerts user and exits  
-
-    # prompt user for experiment output file 
-    # outputfp = OutputFile.getOutputFile()
-    
-    # ScriptDriver.startExperiment(inputdf, outputfp)
-    # transfer control to module in charge of the different scripts. Pass the inputdf and the outputFile to this module. 
-        # loop through all the scripts that the user wants to have run
-        # then we will transfer control to module of specified script 
-        # will potentially need to pass the current row of the dataframe if we need that info to run the script 
-
-
-        
 
 
 main() #TODO: get rid of main() when done. Just makes it easier for me to see where my main function is as im working so leaving it for now. 
