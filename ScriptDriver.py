@@ -9,10 +9,12 @@ import os
 
 
 
-def startExperiment(inputdf, outputfp): # (input dataframe, output filepath)
+
+
+def startExperiment(inputdf, outputdir): # (input dataframe, output filepath)
 
     print("input dataframe head: ", inputdf.head())
-    print(outputfp)
+    print(outputdir)
 
     # module in charge of the different scripts. Pass the inputdf and the outputFile to this module. 
         # loop through all the scripts that the user wants to have run
@@ -37,10 +39,10 @@ def startExperiment(inputdf, outputfp): # (input dataframe, output filepath)
             spec = importlib.util.spec_from_file_location(scriptList[count], 'run_scripts/' + f'{scriptList[count]}.py') # get new module's file specs 
             module = importlib.util.module_from_spec(spec) 
             spec.loader.exec_module(module)
-
+  
             # get current row of dataframe 
             csv_row = inputdf.loc[count]
-            module.start(csv_row)
+            module.start(csv_row, outputdir)
 
         else: 
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
