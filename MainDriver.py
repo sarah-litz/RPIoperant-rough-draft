@@ -3,10 +3,10 @@
                                                     description: 
 -----------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
-import argparse
-import ScriptDriver 
+import argparse 
 import pandas as pd
 import os 
+import importlib
 import time 
 
 
@@ -49,6 +49,22 @@ def set_output_dir(output_loc):
     print(os.path.abspath(os.curdir)) '''
 
 
+def run_next_check(module): 
+    checkIn = False 
+    while checkIn == False: 
+        userIn = input(f'would you like to run {module}? (y/n)') 
+        if (userIn == 'y' or userIn == 'yes'): 
+            checkIn = True 
+            return True 
+        if (userIn == 'n' or userIn == 'no'): 
+            checkIn = True 
+            return False 
+        else: 
+            print('sorry, I dont recognzie that input. please only enter a y or an n')
+            checkIn = False 
+
+
+
 def main(): 
     
     # prompt user for experiment input 
@@ -80,9 +96,50 @@ def main():
     inputdf = pd.read_csv(inputfp) 
     print(inputdf)
 
-    ''' transfer control to ScriptDriver.py '''
-    ScriptDriver.startExperiment(inputdf, outputdir)
+    # ''' transfer control to ScriptDriver.py '''
+    # ScriptDriver.startExperiment(inputdf, outputdir)
 
+    ''' -------- LOAD IN MODULE OF NXT SCRIPT TO RUN ----------- ''' 
+    # loop through all the scripts that the user wants to have run
+    # then we will transfer control to module of specified script 
+    scriptList = inputdf['script'].copy().tolist() # need to make copy() to manipulate 
+    print(scriptList)
+    count = 0 # counter to loop thru script list 
+    
+    # while(len(scriptList) > 0): # need to comment this out for testing so doesn't end up in a endless loop. But will use this while loop instead of the foor loop later on. 
+    for x in scriptList:
+         
+        # make sure that 'script' is a valid module in run_scripts ( use the importlib.util.find_spec() or actually might be spec_from_file_location() )
+        print('-------------------')
+        exists = os.path.exists(f'run_scripts/{scriptList[count]}.py')
+        if exists: 
+            # check if user wants to run next script  
+            if (run_next_check(scriptList[count]) == False ): 
+                print(f'see you l8er')
+                exit()
+            else: 
+            # load in new script 
+                print(f'loading in new script: {scriptList[count]}')
+                spec = importlib.util.spec_from_file_location(scriptList[count], 'run_scripts/' + f'{scriptList[count]}.py') # get new module's file specs 
+                module = importlib.util.module_from_spec(spec) 
+                spec.loader.exec_module(module)
+    
+                # get current row of dataframe 
+                csv_row = inputdf.loc[count]
+                module.start(csv_row, outputdir)
+
+        else: 
+            print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
+
+        count+=1 # increment counter so we can get the next script from scriptList
+
+
+        # TODO: before going to the next inputdf['script'], check with the user that they want to run the next script. 
+        # run next thing in scriptLst 
+            # TODO: check that script is done 
+            # if done, then remove from scriptList
+            # else, ??? 
+            # when script is finished running, make sure that it gets removed from this list! 
 
 
 main() #TODO: get rid of main() when done. Just makes it easier for me to see where my main function is as im working so leaving it for now. 

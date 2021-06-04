@@ -11,9 +11,10 @@ import os
 import csv
 from pathlib import Path
 
+
+
 class Results(): 
     
-
     def __init__(self, csv_input, output_dir): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
         
         ''' requires that an output file will get found or created when a new Results instance is made'''
@@ -57,6 +58,20 @@ class Results():
 
         return output_file # sets self.output_file to this value 
     
-    '''--------------------------------------------------'''
+    '''_________________________________________________________'''
     '''    ------------ Public Methods -------------     '''
-       
+     
+    ''' 
+    (TODO)  
+        
+     
+                -create dedicated writer thread (every new instance of ScriptClass should get one)
+                -threads or1 and or2, w/ target fn.override_door_1 and fn.override_door_2 
+                - to do this, within the __init__ function of Results class, add: 
+                    self.writer_thread_id = threading.Thread(target = writeFunction, daemon = True)
+                    
+        
+        def write_results(thread_id, output_file): 
+            # write to output_file 
+            this function would mimics the fucntion flush_to_CSV that the functions.py file has 
+    '''
