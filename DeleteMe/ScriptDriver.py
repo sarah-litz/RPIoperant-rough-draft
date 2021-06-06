@@ -1,5 +1,8 @@
 ''' --------------------------------------------------------------------------------------------------------------------------------
                                                     filename: ScriptDriver.py
+                                                
+                                                ** NOT IN USE -- WILL LIKELY DELETE THIS SOON (TODO) ** 
+                                                    
                 description: this file is imported by MainDriver.py. The startexperiment function is called by MainDriver. 
                 Purpose of this file is to perform the inline import of a file based on what the user specified in <inputdf> in the run_scripts folder.
                 If the user entered in a list of scripts to run, that list will be looped thru and executed in that order. 

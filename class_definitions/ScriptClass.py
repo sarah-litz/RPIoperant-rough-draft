@@ -7,17 +7,21 @@
                     Imports all of the other components that are necessary for the running. i.e. the hardware stuff and the data analysis stuff. 
 -----------------------------------------------------------------------------------------------------------------------------------'''
 
+#!/usr/bin/python3
 
 
 # TODO/QUESTION: think i need a raspberry pi at this point, so commenting these imports out
 # import RPi.GPIO as GPIO
 import csv
 import pigpio
-import GPIOEmulator as GPIO # mock raspberry pi
+# import GPIOEmulator as GPIO # mock raspberry pi
 import json
 import pandas as pd 
 
+# Local imports 
 from class_definitions.results import Results # manages output data 
+from class_definitions.hardware_classes.hardware import setup_pins
+
 
 class Script(): 
     ''' 
@@ -26,7 +30,7 @@ class Script():
            then, for each script, if it needs to add more it can override this parent class with a subclass 
     '''
 
-    def __init__(self, csv_input, output_dir, key_values):
+    def __init__(self, csv_input, output_dir, key_values, pin_values=None):
 
         self.csv_input = csv_input
         self.output_dir = output_dir
@@ -37,6 +41,12 @@ class Script():
         # self.output_file = self.Results.output_file # get newly generated output file from Results 
         
         # self.pi = pigpio.pi() # initalize pi 
+        ''' INIT PIN VALUES '''
+        #self.Pins = Pins(pin_values=None) # pin object 
+        #self.pins_dict = self.Pins.pins # contains the dictionary of pin_name:pin_num
+        self.pin_obj_dict = setup_pins()
+        print("ScriptClass.py pin_obj_dict test -- 'lever_door_1' is of type: ", self.pin_obj_dict['lever_door_1'].type)
+        print("ScriptClass.py Type Instance Test -- 'lever_door_1' has a type_instance of: ", self.pin_obj_dict['lever_door_1'].type_instance)
         
 
     ''' ------------- Private Methods --------------------'''

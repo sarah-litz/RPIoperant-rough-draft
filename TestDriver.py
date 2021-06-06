@@ -1,11 +1,13 @@
 #!/usr/bin/python3
+import sys
+# sys.path.insert(1,'/home/pi/Litz_RPI_operant/RPIoperant-rough-draft/')
+
 import csv
 import os
 import pandas as pd
 from pathlib import Path
 import json
-import ScriptDriver
-import sys
+
 import run_scripts.Magazine as Magazine
 
 SCRIPTLIST = ["Magazine", "magazine", "Door_test"]
@@ -75,7 +77,7 @@ def testMagazine(csv_input=None, outputdir = '/home/pi/test_outputs/'):
 
 
     csv_input['key_val_changes'] = json.dumps(key_values) # convert dict to string 
-    Magazine.start(csv_input, outputdir) 
+    Magazine.run_script(csv_input, outputdir) 
 
 
 def main():
