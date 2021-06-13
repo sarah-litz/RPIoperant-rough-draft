@@ -9,18 +9,21 @@
 
 #!/usr/bin/python3
 
-
-# TODO/QUESTION: think i need a raspberry pi at this point, so commenting these imports out
-# import RPi.GPIO as GPIO
-import csv
-import pigpio
-# import GPIOEmulator as GPIO # mock raspberry pi
+# Standard Library Imports 
 import json
+import time 
+import csv
+import sys 
+
+# Third Party Imports
 import pandas as pd 
+import pigpio 
 
 # Local imports 
 from class_definitions.results import Results # manages output data 
-from class_definitions.hardware_classes.hardware import setup_pins
+import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
+from class_definitions.hardware_classes.Pins import Pin # import pin class 
+from class_definitions.hardware_classes.lever import (Door, Food) # Parent Class: Lever, Subclass: Door  
 
 
 class Script(): 
@@ -35,20 +38,10 @@ class Script():
         self.csv_input = csv_input
         self.output_dir = output_dir
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
-
-        ''' INIT OUTPUT FILE ''' 
-        self.Results = Results(csv_input, output_dir) # Create Results instance
-        # self.output_file = self.Results.output_file # get newly generated output file from Results 
+        self.Results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
+        self.pins = self.setup_pins_dict() # dictionary of all the individual pin objects
+        print("ScriptClass.py pin_obj_dict test -- 'lever_door_1' is of type: ", self.pins['lever_door_1'].type)
         
-        # self.pi = pigpio.pi() # initalize pi 
-        ''' INIT PIN VALUES '''
-        #self.Pins = Pins(pin_values=None) # pin object 
-        #self.pins_dict = self.Pins.pins # contains the dictionary of pin_name:pin_num
-        self.pin_obj_dict = setup_pins()
-        print("ScriptClass.py pin_obj_dict test -- 'lever_door_1' is of type: ", self.pin_obj_dict['lever_door_1'].type)
-        print("ScriptClass.py Type Instance Test -- 'lever_door_1' has a type_instance of: ", self.pin_obj_dict['lever_door_1'].type_instance)
-        
-
     ''' ------------- Private Methods --------------------'''
     # Make changes to the key values if user added to column "key_val_changes" in csv file
     def change_key_values(self, key_values, key_val_changes): 
@@ -65,9 +58,50 @@ class Script():
         return key_values
 
     
+    ''' setup pins is to add individual Pin instances to a dictionary that can be accessed in ScriptClass '''                  
+    def setup_pins_dict(self, pin_dict=None): 
+        ''' called from ScriptClass.py during script setup. this returns the initalized pin_obj_dict which contains (pin_name->pin_class_instance) pairs '''
+        # function accepts optional argument: user can choose to pass in their own pin dictionary, otherwise the default pins (defined in operant_cage_settings_default.py) are used 
+        
+        if (pin_dict==None): # check if user passed in argument. If not, assign pin_dict to the default values. 
+            pin_dict = default_operant_settings.pins
+        
+        # create new dictionary where each element is (pin_name:Pin_class_instance)
+        pin_obj_dict= {} # inialize empty dict
+        
+        # set the type of the pin based on the pin's name, and then create instance of Pin and append this to pin_obj_dict
+        for key in pin_dict.keys(): 
+            type = None # reset type to None each iteration
+            # instantiate object based on type
+            if 'door' in key:
+                # create new Door instance and add to dictionary
+                pin_obj_dict[key] = Door( key, pin_dict.get(key)) # key -> Pin pair added to dictionary
+            
+            elif 'food' in key: 
+                pin_obj_dict[key] = Food( key, pin_dict.get(key))
+            else: 
+                pin_obj_dict[key] = Pin( key, pin_dict.get(key)) 
+                
+            '''elif 'read' in self.key:
+                type = 'read'
+            elif 'led' in self.key or 'dispense' in self.key :
+                type = 'led '''
+           
+        
+        print("initialized pin_obj_dict. To access a single pin object by it's name, use pin_obj_dict['name_of_pin']")
+        return pin_obj_dict
+    
     ''' ------------- Public Methods ------------------------'''
 
-
+    def get_pins_of_type(self, type): 
+        # returns pins of the specified type 
+        pin_lst = []
+        for p in self.pins.values(): # loop thru the pins dictionary values which contains the Pin Object
+            if p.type == type: # if pin's type matches the speicified type
+                pin_lst.append(p) # add to list
+            else: pass # otherwise, go to next pin in the list 
+        return pin_lst
+                
     ''' TODO: 
     
     -threads or1 and or2, w/ target fn.override_door_1 and fn.override_door_2 
@@ -78,3 +112,12 @@ class Script():
 
 
     '''
+    
+    def countdown_timer(self, timeinterval, event): 
+        print("\r")
+        while timeinterval:
+            mins, secs = divmod(timeinterval, 60)
+            timer = '{:02d}:{:02d}'.format(mins, secs)
+            sys.stdout.write(f"\r{timer} until {event}")
+            time.sleep(1)
+            timeinterval -= 1
