@@ -22,8 +22,10 @@ import pigpio
 # Local imports 
 from class_definitions.results import Results # manages output data 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
-from class_definitions.hardware_classes.Pins import Pin # import pin class 
-from class_definitions.hardware_classes.lever import (Door, Food) # Parent Class: Lever, Subclass: Door  
+from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin class
+from class_definitions.hardware_classes.pins_class.DoorLever import Door 
+from class_definitions.hardware_classes.pins_class.FoodLever import Food
+# from class_definitions.hardware_classes.lever import (Door, Food) # Parent Class: Lever, Subclass: Door  
 
 
 class Script(): 
@@ -35,12 +37,18 @@ class Script():
 
     def __init__(self, csv_input, output_dir, key_values, pin_values=None):
 
+        # input and output files
         self.csv_input = csv_input
         self.output_dir = output_dir
-        self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
         self.Results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
+        
+        # Setup Values of user's Input Information for running Experiment
+        self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
+        
+        # Setup Dictionary of Names of Pins, and create Pin Classes Accordingly 
         self.pins = self.setup_pins_dict() # dictionary of all the individual pin objects
         print("ScriptClass.py pin_obj_dict test -- 'lever_door_1' is of type: ", self.pins['lever_door_1'].type)
+       
         
     ''' ------------- Private Methods --------------------'''
     # Make changes to the key values if user added to column "key_val_changes" in csv file

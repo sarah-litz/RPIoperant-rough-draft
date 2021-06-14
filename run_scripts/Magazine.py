@@ -52,6 +52,14 @@ def run_script(csv_input, output_dir):  # csv_input is the row that corresponds 
         print("Closing:", p.key)
         p.close_door() # close all doors'''
     # QUESTION(cont) here is the other version where I only close lever_door_1 and lever_door_2 
+    print("Continuous Servo Speeds:")
+    print(magazine.pins['lever_door_1'].continuous_servo_speed)
+    
+    ''' Door Stuff '''
+    print("Opening lever_door_1 and lever_door_2 (JUST TO TEST THEM)")
+    magazine.pins['lever_door_1'].open_door()
+    magazine.pins['lever_door_2'].open_door()
+
     print("Closing lever_door_1 and lever_door_2")
     magazine.pins['lever_door_1'].close_door()
     magazine.pins['lever_door_2'].close_door()
