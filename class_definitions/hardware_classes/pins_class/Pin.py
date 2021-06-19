@@ -19,21 +19,19 @@ import class_definitions.hardware_classes.operant_cage_settings_default as defau
 
 kit = ServoKit(channels=16)
 GPIO.setmode(GPIO.BCM) # set up BCM GPIO numbering 
-GPIO.setup(25, GPIO.IN) # set GPIO 25 as input 
-
 
 class Pin(): # class for a single pin 
     def __init__(self, pin_name, pin_number, gpio_obj=None): 
         
-        self.key = pin_name
+        self.name = pin_name
         self.number = pin_number
-        self.gpio_obj = self.gpio_setup()
+        self.gpio_obj = self.gpio_setup() # TODO: get rid of obj version 
         
         self.type = 'Pin'
     
     ''' --------- Private Setup Methods --------------'''
     '''def type_setup(self): 
-        if 'door' in self.key:
+        if 'door' in self.name:
                 type = 'door'
         
         return type''' 
@@ -41,22 +39,22 @@ class Pin(): # class for a single pin
     def gpio_setup(self): # setup with GPIO and create new instance based on type where necessary. (accessed thru self.type_instance)
        
         # GPIO setup 
-        if 'lever' in self.key or 'switch' in self.key: # QUESTION/TODO: or 'door' in self.key:
-            print(self.key + ": IN")
+        if 'lever' in self.name or 'switch' in self.name: # QUESTION/TODO: or 'door' in self.name:
+            print(self.name + ": IN")
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO 
-        elif 'read' in self.key:
-            print(self.key + ": IN")
+        elif 'read' in self.name:
+            print(self.name + ": IN")
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO
-        elif 'led' in self.key or 'dispense' in self.key :
+        elif 'led' in self.name or 'dispense' in self.name :
             GPIO.setup(self.number, GPIO.OUT)
             GPIO.output(self.number, 0)
-            print(self.key + ": OUT")
+            print(self.name + ": OUT")
             return GPIO
         else:
             GPIO.setup(self.number, GPIO.OUT)
-            print(self.key + ": OUT") 
+            print(self.name + ": OUT") 
             return GPIO
     
  

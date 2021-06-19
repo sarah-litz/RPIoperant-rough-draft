@@ -14,11 +14,10 @@ from collections import OrderedDict
 # Local imports 
 from class_definitions.ScriptClass import Script # import Script # import the parent class 
 
+ 
 
-# class Magazine(Script)  
-
-''' ~ ~ ~ functions for getting default values! ~ ~ ~  
-        Defined Here: values for pins and key values '''
+''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
+      #  Defined Here: values for pins and key values 
         
 def get_pin_values(): 
     ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
@@ -44,6 +43,8 @@ def run_script(csv_input, output_dir):  # csv_input is the row that corresponds 
     
     magazine.pins['gpio_sync'].pulse_sync_line(length=0.5) # Event: Experiment Start
     
+    ''' ________________________________________________________________________________________________________________________________________'''
+    
     # TODO/QUESTION on my close_door() function in general. This includes the calling process here, as well as the actual function
     # close all doors 
     door_pins = magazine.get_pins_of_type('Door') # get list of the door pins 
@@ -53,17 +54,17 @@ def run_script(csv_input, output_dir):  # csv_input is the row that corresponds 
         p.close_door() # close all doors'''
     # QUESTION(cont) here is the other version where I only close lever_door_1 and lever_door_2 
     print("Continuous Servo Speeds:")
-    print(magazine.pins['lever_door_1'].continuous_servo_speed)
+    print(magazine.doors['door_1'].continuous_servo_speed)
     
     ''' Door Stuff '''
-    print("Opening lever_door_1 and lever_door_2 (JUST TO TEST THEM)")
-    magazine.pins['lever_door_1'].open_door()
-    magazine.pins['lever_door_2'].open_door()
+    magazine.doors['door_1'].open_door()
+    magazine.doors['door_2'].open_door()
 
-    print("Closing lever_door_1 and lever_door_2")
-    magazine.pins['lever_door_1'].close_door()
-    magazine.pins['lever_door_2'].close_door()
+    door_i_want_to_close = ['door_1', 'door_2']
+    for door in door_i_want_to_close: 
+        magazine.doors[door].close_door()
     
+    '''________________________________________________________________________________________________________________________________________'''
     
     print(f"range for looping: {[i for i in range(1, key_values['num_rounds']+1,1)]}")
 
