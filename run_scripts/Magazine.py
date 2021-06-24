@@ -60,6 +60,7 @@ def run_script(csv_input, output_dir):  # csv_input is the row that corresponds 
     magazine.doors['door_1'].open_door()
     magazine.doors['door_2'].open_door()
 
+    time.sleep(1)
     door_i_want_to_close = ['door_1', 'door_2']
     for door in door_i_want_to_close: 
         magazine.doors[door].close_door()

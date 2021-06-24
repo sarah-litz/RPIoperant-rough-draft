@@ -11,6 +11,8 @@ import datetime
 import os
 import csv
 from pathlib import Path
+from queue import Queue, Empty
+
 
 
 
@@ -19,8 +21,8 @@ class Results():
     def __init__(self, csv_input, output_dir): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
         
         ''' requires that an output file will get found or created when a new Results instance is made'''
-        self.output_file = self.generate_output_file(csv_input, output_dir)
-
+        self.filepath = self.generate_output_file(csv_input, output_dir)
+        self.event_queue = Queue()
 
     ''' --------- Private Methods ----------- '''    
     def generate_output_file(self, csv_input, output_dir): # called at instance declaration only (called from w/in class, no need to call from different module)
@@ -50,14 +52,16 @@ class Results():
             writer = csv.writer(output_file, delimiter = ',')
         
             writer.writerow(['user: %s'%user, 'vole: %s'%vole, 'date: %s'%date,
-            'experiment: %s'%script_name, 'Day: %i'%date.day, ''''Pi: %s'%socket.gethostname()'''])
-
+            'experiment: %s'%script_name, 'Day: %i'%date.day, 'Pi: %s%socket.gethostname()'])
+            writer.writerow(['Round', 'Event', 'Time'])
+            
+            
         with open(fp, 'r') as output_file: 
             print("\noutput filepath:", output_file)
             for line in output_file: 
                 print(line)
 
-        return output_file # sets self.output_file to this value 
+        return fp # sets self.output_file to this value 
     
     '''_________________________________________________________'''
     '''    ------------ Public Methods -------------     '''
@@ -76,3 +80,36 @@ class Results():
             # write to output_file 
             this function would mimics the fucntion flush_to_CSV that the functions.py file has 
     '''
+    def write_results(self): 
+        # write stuff in the event queue to the output file 
+        with open(self.filepath, 'a') as file: # output_file is the new file object 
+            csv.writer(file, delimiter = ',')
+            
+            # https://raspberrypi.stackexchange.com/questions/42867/gpio-wait-for-edge-on-2-channels-at-once
+            print('writing results to file rn')
+             
+            event = self.event_queue.get(timeout=1) # should wait for 
+            # self.event_queue.task_done()
+                # TODO: event may need formatting before writing to the output file 
+            file.write(f'({event}) \n')
+            # except Empty: 
+            #    print('trying to write results but queue was empty')
+            # writer.flush() 
+            # writer.close()
+            return 
+    
+    def cleanup(self): 
+        with open(self.filepath, 'a') as file: 
+            csv.writer(file, delimiter = ',')
+            while self.event_queue is not Empty: 
+                event = self.event_queue.get() 
+                file.write(f'({event}) \n')
+                file.flush()
+                file.close()
+        return 
+    
+    def record_event(self, event): 
+        
+        with open(self.filepath, 'a') as file: 
+            writer = csv.writer(file, delimiter = ',')
+            file.write(f'({event}) \n')

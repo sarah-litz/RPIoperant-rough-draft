@@ -3,11 +3,12 @@
                                                     description: 
 -----------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
-import argparse 
+import argparse
+from types import TracebackType 
 import pandas as pd
-import os 
 import importlib
-import time 
+import sys, traceback, time, os  
+
 
 
 def set_input_fp(csv_in): 
@@ -32,7 +33,7 @@ def set_output_dir(output_loc):
                 os.mkdir(output_loc)
                 outputdir = output_loc 
             elif selection == 'n':
-                print('ok, saving to default loc.')
+                print('ok, saving to default loc.') # default location is set by results.py
                 outputdir = None
                 # time.sleep(2) # TODO/QUESTION: this line was in inital code. Why do we need this? 
             else:
@@ -65,12 +66,11 @@ def run_next_check(module):
 
 
 
-def main(): 
+def startup(): 
     
     # prompt user for experiment input 
     print('welcome\n')
 
-    # TODO: args parse thing 
     # check if user entered in command line arguments. If entered, then check validity of the arguments. 
         # argument #1 must be name of an input file 
         # argument #2 must be name of a directory where output files will be placed 
@@ -92,16 +92,13 @@ def main():
     print("input filepath:", inputfp)
     print("output directory:", outputdir)
     
-
     inputdf = pd.read_csv(inputfp) 
     print(inputdf)
 
-    # ''' transfer control to ScriptDriver.py '''
-    # ScriptDriver.startExperiment(inputdf, outputdir)
 
     ''' -------- LOAD IN MODULE OF NXT SCRIPT TO RUN ----------- ''' 
-    # loop through all the scripts that the user wants to have run
-    # then we will transfer control to module of specified script 
+    # looping through all the scripts that the user wants to have run
+    # for each script, transfers control to module of specified script 
     scriptList = inputdf['script'].copy().tolist() # need to make copy() to manipulate 
     print(scriptList)
     count = 0 # counter to loop thru script list 
@@ -142,4 +139,19 @@ def main():
             # when script is finished running, make sure that it gets removed from this list! 
 
 
-main() #TODO: get rid of main() when done. Just makes it easier for me to see where my main function is as im working so leaving it for now. 
+def main():  # TODO: get rid of main() function at somepoint, probably
+    
+    try: 
+        startup() 
+    except KeyboardInterrupt: 
+        print("keyboard interrupt detected, shutting down.")
+    except Exception: 
+        traceback.print_exc(file=sys.stdout)
+    
+    # TODO: add clean up function call here!! Ensures that operant box doesn't get stuck running. (i.e. prevent a servo from endlessly spinning)
+    sys.exit(0)
+
+
+if __name__ == "__main__": # must be running MainDriver directly
+    main()
+

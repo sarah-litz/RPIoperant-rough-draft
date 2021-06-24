@@ -6,6 +6,7 @@
 
 # standard lib imports 
 import time
+from datetime import datetime
 
 # third party imports 
 import pigpio 
@@ -82,13 +83,37 @@ class Pin(): # class for a single pin
     '''
         
     def detect_event(self, timeout): # detects the current pin for the occurence of some event
-        channel = GPIO.wait_for_edge(self.number, GPIO.RISING, timeout=(timeout*1000)) # timeout based on key_values['Time II']
-        if channel is None: 
-            print("Timeout in the detect_event function (Pins.py) occurred.")
-            return False
-        else: 
-            print("Edge detected in detect_event function (Pins.py)" )
-            return True
+        ''' waits for event to happen to the current pin. As soon as there is an event detected the function returns'''
+        
+        
+        GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=200)
+            
+        print(f'waiting for an event at: {self.name} ({self.number})')
+        start = time.time()
+        while True:
+            if GPIO.event_detected(self.number):
+                timestamp = datetime.now()
+                print(f'{self.name} pressed at {timestamp}')
+                return timestamp
+            if time.time() - start > timeout:
+                print(f'{self.name} timeout')
+                return False 
+            
+        
+    
+    
+    '''def old_detect_event(self, timeout): # TODO: delete this at somepoint if new detect_event is working better    
+        try:         
+            channel = GPIO.wait_for_edge(self.number, GPIO.RISING, timeout=(timeout*1000)) # timeout based on key_values['Time II']
+            if channel is None: 
+                print(f"{self.name} timed out. no event detected (Pin.py)")
+                return False
+            else: 
+                print(f'Edge detected for {self.name} in detect_event function (Pins.py)' )
+                return True
+        
+        except KeyboardInterrupt: 
+            GPIO.cleanup()'''
 
 
             

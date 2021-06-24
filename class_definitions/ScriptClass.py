@@ -41,7 +41,7 @@ class Script():
         # input and output files
         self.csv_input = csv_input
         self.output_dir = output_dir
-        self.Results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
+        self.results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
         
         # Setup Values of user's Input Information for running Experiment
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])

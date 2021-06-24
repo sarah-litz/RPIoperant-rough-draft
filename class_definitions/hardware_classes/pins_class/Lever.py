@@ -2,9 +2,13 @@
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 from class_definitions.hardware_classes.pins_class.Pin import Pin
 import time
+import threading
 
+# constants 
 TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
 
+# globals 
+lock = threading.Lock()
 ''' Lever contains functions that both Door and Food need '''
 
 class Lever(Pin): 
@@ -80,4 +84,6 @@ class Lever(Pin):
         start = time.time() 
         self.servo_lever.angle = retract 
     
-        
+    
+
+            

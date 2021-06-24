@@ -129,19 +129,19 @@ class Door():
 
     
     def override_door(self): 
-        
+        print("IN THE FUNCITON  override_door")
         while True: 
-            if not GPIO.input(self.override_open_switch): 
+            if not GPIO.input(self.override_open_switch.number): 
                 self.door_override = True 
                 self.servo_door.throttle = self.continuous_servo_speed['open']
-                while not GPIO.input(self.override_open_switch): 
+                while not GPIO.input(self.override_open_switch.number): 
                     time.sleep(0.05)
                 self.servo_door.throttle = self.continuous_servo_speed['stop']
             
-            if not GPIO.input(self.override_close_switch): 
+            if not GPIO.input(self.override_close_switch.number): 
                 self.door_override = True 
                 self.servo_door.throttle = self.continuous_servo_speed['close']
-                while not GPIO.input(self.override_close_switch): 
+                while not GPIO.input(self.override_close_switch.number): 
                     time.sleep(0.05)
                 self.servo_door.throttle = self.continuous_servo_speed['stop']
             
