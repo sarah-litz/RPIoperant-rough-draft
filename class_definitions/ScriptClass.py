@@ -17,16 +17,14 @@ import sys
 
 # Third Party Imports
 import pandas as pd 
-import pigpio 
 
 # Local imports 
 from class_definitions.results import Results # manages output data 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin class
-from class_definitions.hardware_classes.pins_class.Lever import Lever # import pin class
-from class_definitions.hardware_classes.Door import Door # SJL
-# from class_definitions.hardware_classes.Food import Food
-# from class_definitions.hardware_classes.lever import (Door, Food) # Parent Class: Lever, Subclass: Door  
+from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass to Pin
+from class_definitions.hardware_classes.pins_class.Pellet import Pellet # subclass to Pin
+from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins
 
 
 class Script(): 
@@ -51,7 +49,11 @@ class Script():
            
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
         self.doors = self.setup_Doors() # returns dictionary for each door. 
-                
+        
+        # Experiment Information 
+        self.round = 0  
+        self.start_time = time.time()
+                    
     ''' ------------- Private Methods --------------------'''
     # Make changes to the key values if user added to column "key_val_changes" in csv file
     def change_key_values(self, key_values, key_val_changes): 
@@ -86,11 +88,11 @@ class Script():
             
             if 'lever' in key: 
                 pin_obj_dict[key] = Lever(key, pin_dict.get(key)) 
+            elif 'pellet' in key: 
+                pin_obj_dict[key] = Pellet(key, pin_dict.get(key))
             else: 
                 pin_obj_dict[key] = Pin(key, pin_dict.get(key))
         
-            print("initialized pin_obj_dict. To access a single pin object by it's name, use pin_obj_dict['name_of_pin']")
-
         return pin_obj_dict
         
         
@@ -100,8 +102,8 @@ class Script():
         i = 1 
         pins_of_door_id = self.get_pins_of_type(f'door_{i}')
         while len(pins_of_door_id) != 0: # check if list is empty  
-            print(pins_of_door_id)
-            # this assumes that the doors will be labeled in chronological order. 
+            
+            # this assumes that the doors will be named in chronological order; door_1, door_2, door_3, etc. 
             # so, for example, if door_3 comes back with <None>, then we assume that we have only 2 doors 
             
             # create door_i instance and send the pins that belong to this door  
@@ -133,7 +135,7 @@ class Script():
         for p in self.pins: # loop thru the pins dictionary values which contains the Pin Object 
             # SJL: changed from if type==p to if type in p 
             if type in self.pins[p].name: # if pin's type matches the speicified type
-                print(f'{type} in {self.pins[p].name}')
+                # print(f'{type} in {self.pins[p].name}')
                 pin_dict[self.pins[p].name] = (self.pins[p]) # add pin object to dictionary
             else: pass # otherwise, go to next pin in the list 
         
@@ -155,6 +157,60 @@ class Script():
         while timeinterval:
             mins, secs = divmod(timeinterval, 60)
             timer = '{:02d}:{:02d}'.format(mins, secs)
-            sys.stdout.write(f"\r{timer} until {event}")
+            sys.stdout.write(f"\r{timer} until {event}  ")
             time.sleep(1)
             timeinterval -= 1
+
+
+
+    def buzz(self, buzz_type): 
+        # play sound function 
+        # set values for buzz length, hz, and name
+        if buzz_type is 'round_buzz': 
+            buzz_len =   self.key_values['round_start_tone_time']
+            hz =  self.key_values['round_start_tone_hz']
+            name = 'round_start_tone'
+            
+        elif buzz_type is 'pellet_buzz': 
+            buzz_len = self.key_values['pellet_tone_time']
+            hz = self.key_values['pellet_tone_hz']
+            name =  'pellet_tone'
+            
+        elif buzz_type is 'door_open_buzz': 
+            buzz_len = self.key_values['door_open_tone_time']
+            hz = self.key_values['door_open_tone_hz']
+            name = 'door_open_tone'
+
+        elif buzz_type is 'door_close_buzz':
+            buzz_len = self.key_values['door_close_tone_time'] 
+            hz = self.key_values['door_close_tone_hz']
+            name = 'door_close_tone'
+        
+        else: 
+            Exception('the specified buzz_type passed to the buzz funciton does not exist. check for spelling errors?')
+            exit()
+        
+        self.results.event_queue.put([self.round, f'{name} tone start {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])
+        self.pins['speaker_tone'].buzz(buzz_len, hz) 
+        self.results.event_queue.put([self.round, f'{name} tone complete {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])        
+        return buzz_len, hz, name 
+
+    def pulse_sync_line(self, length): 
+        # calls the function pulse_sync_line defined in the Pin class. 
+        # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
+        self.results.event_queue.put([self.round, f'pulse sync line ({length})', time.time() - self.start_time])
+        self.pins['gpio_sync'].pulse_sync_line(length)
+        return 
+    
+    
+    
+    def cleanup(self): 
+        # make sure all doors closed and no servos are running still  
+        for d in self.doors: 
+            self.doors[d].cleanup() # shuts doors and shuts off door servos 
+        self.results.cleanup() # finishes writing stuff in event_queue to output file 
+            
+
+        
+
+    

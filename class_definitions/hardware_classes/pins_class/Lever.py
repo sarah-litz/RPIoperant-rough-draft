@@ -57,8 +57,6 @@ class Lever(Pin):
             door_id = get_door_id(self.name)
             return default_operant_settings.servo_dict.get(f'lever_{door_id}')
             
-        
-        
     
     ''' ---------------- Public Methods --------------- '''
     def extend_lever(self): 
@@ -84,6 +82,8 @@ class Lever(Pin):
         start = time.time() 
         self.servo_lever.angle = retract 
     
+    
+
     
 
             

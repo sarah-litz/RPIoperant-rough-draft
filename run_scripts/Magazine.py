@@ -14,18 +14,16 @@ from collections import OrderedDict
 # Local imports 
 from class_definitions.ScriptClass import Script # import Script # import the parent class 
 
- 
 
 ''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
       #  Defined Here: values for pins and key values 
         
-def get_pin_values(): 
+def get_pin_values():  # TODO: possibly delete this function
     ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
     pins = {}
     return pins 
 
 def get_key_values(): 
-    # not defined inside of Magazine class for more accessibility when testing individual scripts 
     ''' DEFAUTL KEY VALUES DEFINED HERE '''
     return OrderedDict([('num_rounds', 15), ('round_time',90), 
                                         ('timeII',2), ('timeIV',2), 
@@ -36,78 +34,101 @@ def get_key_values():
 
 
 '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
-def run_script(csv_input, output_dir):  # csv_input is the row that corresponds with the current script getting run 
+def run_script(script):  # csv_input is the row that corresponds with the current script getting run 
  
-    key_values = get_key_values()
-    magazine = Script(csv_input, output_dir, key_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
-    
-    magazine.pins['gpio_sync'].pulse_sync_line(length=0.5) # Event: Experiment Start
-    
-    ''' ________________________________________________________________________________________________________________________________________'''
-    
-    # TODO/QUESTION on my close_door() function in general. This includes the calling process here, as well as the actual function
-    # close all doors 
-    door_pins = magazine.get_pins_of_type('Door') # get list of the door pins 
-    # TODO/QUESTION: confused on what the diff pins of "door" type do... Is it incorrect to pass all of them to the close_door function?? 
-    '''for p in door_pins: 
-        print("Closing:", p.key)
-        p.close_door() # close all doors'''
-    # QUESTION(cont) here is the other version where I only close lever_door_1 and lever_door_2 
-    print("Continuous Servo Speeds:")
-    print(magazine.doors['door_1'].continuous_servo_speed)
-    
-    ''' Door Stuff '''
-    magazine.doors['door_1'].open_door()
-    magazine.doors['door_2'].open_door()
 
-    time.sleep(1)
-    door_i_want_to_close = ['door_1', 'door_2']
-    for door in door_i_want_to_close: 
-        magazine.doors[door].close_door()
+    results = script.results
     
+    results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
+    
+    # script.start_time = time.time() # start timing 
+    
+    # make sure all doors are closed
+    doors = ['door_1', 'door_2']
+    for d in doors:
+        if script.doors[d].isOpen() is True:  
+            script.doors[d].close_door() 
+       
+     
+    # pulse to signify start of experiment 
+    script.pins['gpio_sync'].pulse_sync_line(length=0.5) # Event: Experiment Start
+       
     '''________________________________________________________________________________________________________________________________________'''
     
-    print(f"range for looping: {[i for i in range(1, key_values['num_rounds']+1,1)]}")
-
-    # round start buzz 
+    print(f"range for looping: {[i for i in range(1, script.key_values['num_rounds']+1,1)]}")
     
-    
-    print(f"setup finished, starting experiment with these key values: \n {magazine.key_values}: \n")
-    for count in range(0, int(magazine.key_values['num_rounds'])): 
+    print(f"setup finished, starting experiment with these key values: \n {script.key_values}: \n")
+    for count in range(0, int(script.key_values['num_rounds'])): 
 
+        # ~~ New Round ~~ 
         round_start = time.time()
-        print("round #",count+1)
+        script.round = count+1
+        print("round #",script.round)
+        script.pulse_sync_line(length=0.1) # Pulse for Event: New Round Start
         
-        magazine.pins['lever_food'].extend_lever()
-        # function: monitor lever 
-        
-        time_II_start = time.time()
-        
-        # wait for press
-        timeout = magazine.key_values['timeII'] # timeout value for lever press detection
-        # callback = ??? 
-        if magazine.pins['lever_food'].detect_event(timeout) is True: # wait until an event is detected on the lever_food pin or the timeout is reached
-            # lever was pressed
-            # dispense pellet
-            pass  
-        else: # else, timed out meaning vole did not press lever
-            # dispense pellet anyways
-            pass
-        
-        time.sleep(magazine.key_values['timeIV']) # pause before retracting lever 
-        
-        # TODO/QUESTION: 
-        # pulse sync line?? 
-        # lever_press_queue ?? 
-        
-        magazine.pins['lever_food'].retract_lever()
-        
-        # countdown until the start of the next round: 
-        magazine.countdown_timer(magazine.key_values['round_time'], event='next round')
-       
-        
+        results.event_queue.put([script.round, 'new round', round_start-script.start_time]) # add to timestamp_queue aka event_queue 
+        script.buzz('round_buzz') # play sound for round start (type: 'round_buzz')
 
+    
+        # extend and monitor for presses on food lever 
+        script.pins['lever_food'].extend_lever()
+        
+        timeout = script.key_values['timeII'] # timeout value for lever press detection
+        event, timestamp = script.pins['lever_food'].detect_event(timeout)
+        
+        time_II_start = time.time() # question: not sure wat this gets used for 
+
+        if event: # wait until an event is detected on the lever_food pin or the timeout is reached
+            # lever was pressed
+            script.pulse_sync_line(length=0.25) # Pulse for Event: Lever Press 
+            script.buzz('pellet_buzz') # play sound for lever press  
+            results.event_queue.put([script.round, 'lever_food pressed', timestamp-script.start_time]) # record event in event queue
+            # TODO: dispense pellet             
+        else: # else, timed out meaning vole did not press lever    
+            script.buzz('pellet_buzz') # play sound 
+            # TODO: dispense pellet anyways
+            print('no press detected')
+        
+        print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
+        event, pellet_dispensed_timestamp = script.pins['read_pellet'].dispense_pellet()
+        
+        time.sleep(script.key_values['timeIV']) # pause before retracting lever 
+                
+        script.pins['lever_food'].retract_lever()
+        
+        # TODO: check to see if pellet was retrieved (pellet_state)
+        if event: # pellet was dispensed 
+            results.event_queue.put([script.round, 'pellet dispensed', pellet_dispensed_timestamp-script.start_time])
+        else:  # pellet was not dispensed 
+            results.event_queue.put([script.round, 'pellet dispense failure', pellet_dispensed_timestamp-script.start_time])
+            
+        # TODO: wait for writer thread to finish writing
+        results.event_queue.join() # ensures that all events get written before beginning next round 
+        # TODO: cleanup before next round?? ( reset vals where necessary, shut off servos and stuff )
+        # ~~ end of for loop for looping thru specified number of rounds ~~ 
+        results.analysis()
+        # countdown until the start of the next round: 
+        script.countdown_timer(script.key_values['round_time'], event='next round') 
+    # TODO: analyze and cleanup
+    # results.analysis 
+    
     return True 
+
+
+def run(csv_input, output_dir): 
+    try: 
+ 
+        key_values = get_key_values()
+        script = Script(csv_input, output_dir, key_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        run_script(script) 
+        
+    except KeyboardInterrupt: 
+        print("  uh oh interrupt! I will clean up and then exit Magazine.")
+        script.cleanup() 
+        
+    
+
+
     
 
 

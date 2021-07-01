@@ -9,10 +9,13 @@ import time
 from datetime import datetime
 
 # third party imports 
-import pigpio 
 import RPi.GPIO as GPIO
 from gpiozero import LED, Button 
 from adafruit_servokit import ServoKit
+import pigpio
+import os 
+if os.system('sudo lsof -i TCP:8888'): #activates the pigpio daemon that runs PWM, unless its already running
+    os.system('sudo pigpiod')
 
 # local imports 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
@@ -27,7 +30,7 @@ class Pin(): # class for a single pin
         self.name = pin_name
         self.number = pin_number
         self.gpio_obj = self.gpio_setup() # TODO: get rid of obj version 
-        
+        self.pi = pigpio.pi()
         self.type = 'Pin'
     
     ''' --------- Private Setup Methods --------------'''
@@ -60,49 +63,55 @@ class Pin(): # class for a single pin
     
  
     ''' ---------- Public Methods --------------- '''        
-    def read_gpio_status(self): 
-        return GPIO.input(self.number)
-    
-    def pulse_sync_line(self, length): 
+    # TODO: throw errors if pulse_sync_line or buzz are called with a pin that isn't their defined pin.
+    def pulse_sync_line(self, length): # always called for the 'gpio_sync' pin
         GPIO.output(self.number, 1)
         time.sleep(length)
         GPIO.output(self.number, 0)
+        return 
+    
+    def buzz(self, buzz_len, hz): # always called with the 'speaker_tone' pin
+        # QUESTION: not using buzz_len?? 
+        # call with the speaker tone pin 
+        self.pi.set_PWM_dutycycle(self.number, 255/2)
+        self.pi.set_PWM_frequency(self.number, int(hz))
+        time.sleep(buzz_len)
+        self.pi.set_PWM_dutycycle(self.number, 0) # turn off sound 
+        return 
     
     
-    #   Pin Event Detection   
-    ''' BUTTON PRESS DETECTED: couldn't get to work, replaced with detect_event function
-    def button_press_detected_callback(self): 
-        print("button was pressed")
-    def detect_button_press(self, timeout): 
-        button = Button(self.number)
-        button.wait_for_press(timeout)
-        if(button.is_pressed): 
-            button.when_pressed = (self.button_press_detected_callback)
-        else: 
-            print("no press detected")
-    '''
-        
-    def detect_event(self, timeout): # detects the current pin for the occurence of some event
+    
+    #   Pin Event Detection           
+    def detect_event(self, timeout, edge=None): # detects the current pin for the occurence of some event
         ''' waits for event to happen to the current pin. As soon as there is an event detected the function returns'''
         
-        
-        GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=200)
+        # defaults to rising edge, but can change this by passing in arg for edge
+        if edge is None: 
+            GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=200) 
+        else: 
+            GPIO.add_event_detect(self.number, edge, bouncetime=200)
             
         print(f'waiting for an event at: {self.name} ({self.number})')
         start = time.time()
         while True:
             if GPIO.event_detected(self.number):
-                timestamp = datetime.now()
-                print(f'{self.name} pressed at {timestamp}')
-                return timestamp
+                timestamp = time.time()
+                print(f'event detected for {self.name} at {timestamp}')
+                GPIO.remove_event_detect(self.number)
+                return True, timestamp
             if time.time() - start > timeout:
                 print(f'{self.name} timeout')
-                return False 
+                timestamp = time.time()
+                GPIO.remove_event_detect(self.number)
+                return False, timestamp 
             
         
     
     
-    '''def old_detect_event(self, timeout): # TODO: delete this at somepoint if new detect_event is working better    
+    '''
+    
+    # --------------- NOT IN USE ANYMORE ---------
+    def old_detect_event(self, timeout): # TODO: delete this at somepoint if new detect_event is working better    
         try:         
             channel = GPIO.wait_for_edge(self.number, GPIO.RISING, timeout=(timeout*1000)) # timeout based on key_values['Time II']
             if channel is None: 
@@ -113,7 +122,22 @@ class Pin(): # class for a single pin
                 return True
         
         except KeyboardInterrupt: 
-            GPIO.cleanup()'''
+            GPIO.cleanup()
+    
+    BUTTON PRESS DETECTED: couldn't get to work, replaced with detect_event function
+    def button_press_detected_callback(self): 
+        print("button was pressed")
+    def detect_button_press(self, timeout): 
+        button = Button(self.number)
+        button.wait_for_press(timeout)
+        if(button.is_pressed): 
+            button.when_pressed = (self.button_press_detected_callback)
+        else: 
+            print("no press detected")
+            
+    def read_gpio_status(self):  # not in use anymore 
+        return GPIO.input(self.number)
+    '''
 
 
             

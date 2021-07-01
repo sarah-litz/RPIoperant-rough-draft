@@ -123,7 +123,7 @@ def startup():
     
                 # get current row of dataframe 
                 csv_row = inputdf.loc[count]
-                module.run_script(csv_row, outputdir)
+                module.run(csv_row, outputdir)
 
         else: 
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )

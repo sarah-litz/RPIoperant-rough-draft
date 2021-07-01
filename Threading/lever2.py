@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+from class_definitions.ScriptClass import Script # import Script # import the parent class 
+
+
 import pigpio 
 import RPi.GPIO as GPIO
 from gpiozero import LED, Button 
@@ -13,6 +16,7 @@ import traceback, sys
 import os 
 import pandas as pd
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 
 # third party imports 
@@ -25,7 +29,6 @@ from class_definitions.results import Results # manages output data
 
 # Global Vars 
 lever_q = Queue()
-event_queue = Queue()
 lock = threading.Lock()
 event_lock = threading.Lock()
 
@@ -37,7 +40,7 @@ def setup_results():
     print("input filepath:", inputfp)
     print("output directory:", outputdir)
     inputdf = pd.read_csv(inputfp) 
-    csv_row = inputdf.loc[1] # get 1st row 
+    csv_row = inputdf.loc[0] # get 1st row 
     return Results(csv_row, outputdir)
 
 
@@ -59,23 +62,20 @@ def setup_lever():
     return myLever1, myLever2, myLever3
 
 
-def monitor_event_queue(results): # TODO: def getting stuck somewhere with this thread
+def monitor_for_event(results): # TODO: def getting stuck somewhere with this thread
     # thread that waits for stuff to get added to queue and if something is there, it will write to results file.
     # TODO/LEAVING OFF HERE 
     
     while True: 
         event_lock.acquire()
-        event = results.event_queue.get()
+        event = results.event_queue.get() # if event_queue is empty this will wait for something to be added
         event_lock.release()
-        print('what the fuck')
         logging.debug('i am monitoring the event queue mmkay')
         results.record_event(event)
         results.event_queue.task_done()
+      
     
-    
-    
-   
-def monitor_lever(q, results): 
+def monitor_lever(results): 
 
     lock.acquire() # ** note lock aquire and release are atomic operations 
     lever = lever_q.get() 
@@ -87,25 +87,31 @@ def monitor_lever(q, results):
     event_timestamp = lever.detect_event(3)
     if event_timestamp is not False: 
         # event detected for current lever, add to event_queue and flag the event object to let writer thread know 
-        results.event_queue.put((lever.name, event_timestamp))
+        results.event_queue.put(['round#', lever.name, event_timestamp])
         
     time.sleep(0.3) # force pause before retracting lever cuz it scares me evertime w/out it.   
     lever.retract_lever()
     lever_q.task_done()
-    logging.debug('exiting monitor lever function')
+    logging.info('exiting monitor lever function')
     return 
 
 
 
 def main(): 
     
+    FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+    logging.basicConfig(format=FORMAT)
     results = setup_results()
     my_levers = setup_lever()
     print(my_levers)
     
-    # TODO: signal handler 
-
+    
     # Worker Thread Pool: 
+    # workers = 3
+    # with ThreadPoolExecutor(max_workers=workers) as executor: 
+    #     task1 = executor.submit(monitor_lever, (lever_q, results, )) 
+            
+    #    executor.map(monitor_lever, (lever_q, results,)) # arg 1 is function name, arg 2 is the arguments for that function
     for i in range(4):  # creates 4 worker threads 
         threading.Thread(target=monitor_lever, args=(lever_q, results,), daemon=True).start()
         
@@ -116,14 +122,11 @@ def main():
 
     
     # writer thread 
-    threading.Thread(target=monitor_event_queue, args=(results,), daemon=True).start()
+    threading.Thread(target=monitor_for_event, args=(results,), daemon=True).start()
     
     # block until all tasks are done
     lever_q.join()
-    results.event_queue.join()
-    # block until all events are written to file 
-    # results.cleanup()
-    # results.event_queue.join()
+    results.event_queue.join() # ensures that all events get written 
 
     print('All work completed')
     return 

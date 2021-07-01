@@ -98,7 +98,7 @@ def monitor_lever(q, results):
     event_timestamp = lever.detect_event(3)
     if event_timestamp: 
         # event detected for current lever, add to event_queue and flag the event object to let writer thread know 
-        results.event_queue.put((lever.name, event_timestamp))
+        results.event_queue.put([lever.name, event_timestamp])
         # QUESTION/TODO: OR CAN I JUST DIRECTLY WRITE THE EVENT TO OUTPUT FILE? 
         # results.record_event(lever.name, event_timestamp)
 
