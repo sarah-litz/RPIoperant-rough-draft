@@ -22,12 +22,16 @@ class Pellet(Pin):
         self.continuous_servo_speeds = default_operant_settings.continuous_servo_speeds['dispense_pellet']
         
         # attributes for tracking the current state of the pellet
-        self.pellet_exists = False # True if pellet is there, False if no pellet 
+        # self.pellet_exists = False # True if pellet is there, False if no pellet 
+    
+    def pelletExists(self): 
+        # returns True if pellet is in trough, False if it is not 
+        return GPIO.input(self.number) # checks the 'read_pellet' pin 
     
     def dispense_pellet(self): 
         
-        if self.pellet_exists: # there is already a pellet, do not dispense
-            return None  
+        if self.pelletExists(): # there is already a pellet, do not dispense
+            return False, time.time()   
         else: # dispense pellet 
             
            # QUESTION: confused on some aspects of the original dispense_pellet function that is written. 
@@ -39,7 +43,6 @@ class Pellet(Pin):
             self.continuous_servo_speeds['stop']
             if event: 
                 # a pellet was dispensed  
-                self.pellet_exists = True 
                 return event, event_timestamp 
             else: 
                 # timed out, pellet did not get dispensed.

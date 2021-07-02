@@ -13,6 +13,8 @@ import csv
 from pathlib import Path
 from queue import Queue, Empty
 import threading
+import pandas as pd
+import socket
 
 
 
@@ -52,11 +54,10 @@ class Results():
             fp = os.path.join(defaultfp, fname)
         
         ''' open file and write header with general experiment information '''
-        with open(fp, 'w') as output_file: # output_file is the new file object 
+        with open(fp, 'a') as output_file: # output_file is the new file object 
             writer = csv.writer(output_file, delimiter = ',')
         
-            writer.writerow(['user: %s'%user, 'vole: %s'%vole, 'date: %s'%date,
-            'experiment: %s'%script_name, 'Day: %i'%date.day, 'Pi: %s%socket.gethostname()'])
+            writer.writerow([f'(EXPERIMENT INFO) user: {user}, vole: {vole}, date: {date}, experiment: {script_name}, Day: {date.day}, Pi: {socket.gethostname()},'])
             writer.writerow(['Round', 'Event', 'Time'])
             
             
@@ -102,17 +103,26 @@ class Results():
     def analysis(self): 
         
         print("something will happen here to analyze the data but idg what that is yet. (from resutls.py)")
-        '''with open(self.filepath) as f: 
-             reader = csv.reader(f)
-             header_row = next(reader)
-             print(header_row)'''
-             
+        # Read In Data 
+        df = pd.read_csv(self.filepath, skiprows=1) # does not read the header into the dataframe 
+        print(df.head())
+        print('-------------------------------')
+        self.pellet_latency(df)
+    
+    
+    def pellet_latency(self, df): 
+        pellet_df = df.loc[:, 'Event']
+        print(pellet_df.loc['pellet dispensed', 'pellet retrieved'])
+        # print(pellet_df.head())
+        
+    
+    ''' Functions to help with Exiting the Program '''          
     def cleanup(self): # finish writing and close file
         with open(self.filepath, 'a') as file: 
             csv.writer(file, delimiter = ',')
-            while self.event_queue is not Empty: 
+            '''while self.event_queue is not Empty: 
                 event = self.event_queue.get() 
-                file.write(f'({event}) \n')
+                file.write(f'({event}) \n')'''
             file.flush()
             file.close()
         return

@@ -198,7 +198,6 @@ class Script():
     def pulse_sync_line(self, length): 
         # calls the function pulse_sync_line defined in the Pin class. 
         # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
-        self.results.event_queue.put([self.round, f'pulse sync line ({length})', time.time() - self.start_time])
         self.pins['gpio_sync'].pulse_sync_line(length)
         return 
     
@@ -209,7 +208,7 @@ class Script():
         for d in self.doors: 
             self.doors[d].cleanup() # shuts doors and shuts off door servos 
         self.results.cleanup() # finishes writing stuff in event_queue to output file 
-            
+        return     
 
         
 

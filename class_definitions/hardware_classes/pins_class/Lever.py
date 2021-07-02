@@ -60,7 +60,7 @@ class Lever(Pin):
     
     ''' ---------------- Public Methods --------------- '''
     def extend_lever(self): 
-        print("(EXTENDING LEVER) lever angle: ", self.angles)
+        # print("(EXTENDING LEVER) lever angle: ", self.angles)
         extend = self.angles[0]
         retract = self.angles[1]
         

@@ -7,6 +7,7 @@
 
 # Standard Lib Imports 
 import time 
+import sys 
 
 # Third party imports 
 from collections import OrderedDict
@@ -51,6 +52,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
        
      
     # pulse to signify start of experiment 
+    results.event_queue.put([script.round, f'pulse sync line (0.5)', time.time()-script.start_time])
     script.pins['gpio_sync'].pulse_sync_line(length=0.5) # Event: Experiment Start
        
     '''________________________________________________________________________________________________________________________________________'''
@@ -64,13 +66,16 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         round_start = time.time()
         script.round = count+1
         print("round #",script.round)
+        
+        results.event_queue.put([script.round, f'pulse sync line (0.1)', time.time()-script.start_time])
         script.pulse_sync_line(length=0.1) # Pulse for Event: New Round Start
         
         results.event_queue.put([script.round, 'new round', round_start-script.start_time]) # add to timestamp_queue aka event_queue 
         script.buzz('round_buzz') # play sound for round start (type: 'round_buzz')
 
     
-        # extend and monitor for presses on food lever 
+        # extend and monitor for presses on food lever
+        results.event_queue.put([script.round, 'levers out', round_start-script.start_time]) 
         script.pins['lever_food'].extend_lever()
         
         timeout = script.key_values['timeII'] # timeout value for lever press detection
@@ -80,23 +85,28 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
 
         if event: # wait until an event is detected on the lever_food pin or the timeout is reached
             # lever was pressed
+            
+            results.event_queue.put([script.round, f'pulse sync line (0.25)', time.time()-script.start_time])
             script.pulse_sync_line(length=0.25) # Pulse for Event: Lever Press 
+            
             script.buzz('pellet_buzz') # play sound for lever press  
-            results.event_queue.put([script.round, 'lever_food pressed', timestamp-script.start_time]) # record event in event queue
+            results.event_queue.put([script.round, 'food lever pressed', timestamp-script.start_time]) # record event in event queue
             # TODO: dispense pellet             
         else: # else, timed out meaning vole did not press lever    
             script.buzz('pellet_buzz') # play sound 
             # TODO: dispense pellet anyways
             print('no press detected')
         
+        # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
         event, pellet_dispensed_timestamp = script.pins['read_pellet'].dispense_pellet()
         
+        # Retract Levers
         time.sleep(script.key_values['timeIV']) # pause before retracting lever 
-                
+        results.event_queue.put([script.round, 'food lever retracted', time.time()-script.start_time])
         script.pins['lever_food'].retract_lever()
         
-        # TODO: check to see if pellet was retrieved (pellet_state)
+        
         if event: # pellet was dispensed 
             results.event_queue.put([script.round, 'pellet dispensed', pellet_dispensed_timestamp-script.start_time])
         else:  # pellet was not dispensed 
@@ -104,9 +114,8 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
             
         # TODO: wait for writer thread to finish writing
         results.event_queue.join() # ensures that all events get written before beginning next round 
-        # TODO: cleanup before next round?? ( reset vals where necessary, shut off servos and stuff )
-        # ~~ end of for loop for looping thru specified number of rounds ~~ 
-        results.analysis()
+        # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
+        results.analysis() # TODO) this should possibly be moved to the end of all rounds for each experiment? 
         # countdown until the start of the next round: 
         script.countdown_timer(script.key_values['round_time'], event='next round') 
     # TODO: analyze and cleanup
@@ -125,6 +134,18 @@ def run(csv_input, output_dir):
     except KeyboardInterrupt: 
         print("  uh oh interrupt! I will clean up and then exit Magazine.")
         script.cleanup() 
+        while True: 
+            cont = input("do you want to run the remaining scripts? (y/n)")
+            if cont is 'y': 
+                return 
+            elif cont is 'n': 
+                sys.exit(0) # ends program immediately 
+            else: 
+                'hmm didnt recognize that input. please only enter y or n'
+        
+    else: 
+        print("Magazine script has finished running all rounds successfully!")
+        # TODO: any extra cleanup stuff if needed?? 
         
     
 

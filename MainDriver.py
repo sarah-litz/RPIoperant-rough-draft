@@ -52,17 +52,14 @@ def set_output_dir(output_loc):
 
 def run_next_check(module): 
     checkIn = False 
-    while checkIn == False: 
+    while True: 
         userIn = input(f'would you like to run {module}? (y/n)') 
         if (userIn == 'y' or userIn == 'yes'): 
-            checkIn = True 
             return True 
         if (userIn == 'n' or userIn == 'no'): 
-            checkIn = True 
             return False 
         else: 
             print('sorry, I dont recognzie that input. please only enter a y or an n')
-            checkIn = False 
 
 
 
@@ -99,7 +96,7 @@ def startup():
     ''' -------- LOAD IN MODULE OF NXT SCRIPT TO RUN ----------- ''' 
     # looping through all the scripts that the user wants to have run
     # for each script, transfers control to module of specified script 
-    scriptList = inputdf['script'].copy().tolist() # need to make copy() to manipulate 
+    scriptList = inputdf['script'].copy().tolist() 
     print(scriptList)
     count = 0 # counter to loop thru script list 
     
@@ -129,7 +126,10 @@ def startup():
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
 
         count+=1 # increment counter so we can get the next script from scriptList
-
+        nxt = run_next_check(scriptList[count])
+        if not nxt: 
+            print('exiting now')
+            return 
 
         # TODO: before going to the next inputdf['script'], check with the user that they want to run the next script. 
         # run next thing in scriptLst 
