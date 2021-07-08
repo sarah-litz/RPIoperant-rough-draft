@@ -72,6 +72,7 @@ class Results():
     '''    ------------ Public Methods -------------     '''
      
     def record_event(self, event): 
+        # called by monitor_for_event only 
         # gets passed an event from the event_queue that gets written to the output file 
         with open(self.filepath, 'a') as file: 
             round = event[0]
@@ -112,7 +113,7 @@ class Results():
     
     def pellet_latency(self, df): 
         pellet_df = df.loc[:, 'Event']
-        print(pellet_df.loc['pellet dispensed', 'pellet retrieved'])
+        # print(pellet_df.loc['pellet dispensed', 'pellet retrieved'])
         # print(pellet_df.head())
         
     

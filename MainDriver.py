@@ -126,12 +126,11 @@ def startup():
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
 
         count+=1 # increment counter so we can get the next script from scriptList
-        nxt = run_next_check(scriptList[count])
+        nxt = run_next_check(scriptList[count]) # checks if user wants to run next script 
         if not nxt: 
             print('exiting now')
             return 
 
-        # TODO: before going to the next inputdf['script'], check with the user that they want to run the next script. 
         # run next thing in scriptLst 
             # TODO: check that script is done 
             # if done, then remove from scriptList

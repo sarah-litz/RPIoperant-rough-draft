@@ -27,16 +27,38 @@ def analysis():
             print(row) 
             print(row[0])
             # print(csv_reader[1])'''
-    df = pd.read_csv('defaultfp/7_1_2021__20_44__Magazine_vole_1.0.csv', skiprows=1) # does not read the header into the dataframe 
+    df = pd.read_csv('defaultfp/7_7_2021__12_47__Magazine_vole_1.0.csv', skiprows=1) # does not read the header into the dataframe 
     print(df)
     print("\n")
     pellet_latency(df)
+    by_round(df)
     
     
 def pellet_latency(df): 
 
-    pellet_events = df.loc[df['Event'].str.contains("pellet")]
+    pellet_events = df.loc[df['Event'].str.contains("lever press")]
     print(pellet_events)
+
+def by_round(df): 
+
+    num_rounds = df['Round'].nunique()
+    for i in range(1, num_rounds): # skips round 0 
+        leverdf = df.loc[df['Event'].str.contains("lever")]
+        # take difference between lever press and lever out time 
+        lever_out = leverdf.loc[leverdf['Event'].str.contains("out")]
+        print("lever out: ", lever_out['Time'])
+        
+        lever_press = leverdf.loc[leverdf['Event'].str.contains("press")]
+        print('lever press: ', lever_press['Time'])
+        
+        timediff = float(lever_press['Time']) - float(lever_out['Time'])
+        print("time difference: ", timediff)
+        print("formatted time difference:", "{:.2f}".format(timediff))
+        # record the time difference for each round 
+        
+        # print(leverdf['Time'])
+        
+    
 
 analysis()
         

@@ -3,6 +3,7 @@ import class_definitions.hardware_classes.operant_cage_settings_default as defau
 from class_definitions.hardware_classes.pins_class.Pin import Pin
 import time
 import threading
+from queue import Queue
 
 # constants 
 TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
@@ -72,15 +73,18 @@ class Lever(Pin):
             extend_start = extend - modifier
         
         self.servo_lever.angle = extend_start 
+        timestamp = time.time()
         time.sleep(0.1)
         self.servo_lever.angle = extend 
-    
+        return timestamp
+        
     def retract_lever(self): 
         print("(RETRACTING LEVER) lever angle: ", self.angles)
         retract = self.angles[1]   
         
-        start = time.time() 
+        timestamp = time.time() 
         self.servo_lever.angle = retract 
+        return timestamp
     
     
 

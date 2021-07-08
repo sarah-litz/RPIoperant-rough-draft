@@ -24,13 +24,42 @@ class Pellet(Pin):
         # attributes for tracking the current state of the pellet
         # self.pellet_exists = False # True if pellet is there, False if no pellet 
     
-    def pelletExists(self): 
+    def troughEmpty(self): 
         # returns True if pellet is in trough, False if it is not 
         return GPIO.input(self.number) # checks the 'read_pellet' pin 
     
+    def pellet_retrieval(self): # watches for pellet retrieval 
+        # called on the 'read_pellet' pin 
+        'Monitoring for pellet retrieval...'
+        if self.troughEmpty(): 
+            print('there is no pellet in trough, so it is pointless to monitor for pellet_retrieval so returning from this function now!')
+            return False, time.time()
+        
+        time_start = time.time()
+        empty_count = 0 # counts number of times that the pin reads the trough as being empty 
+        pelletExists_count = 0 # counts the number of times that the pin reads the trough as containing a pellet 
+        
+        while time.time() - time_start < 2000: 
+            if self.troughEmpty(): 
+                # nothing is in the trough 
+                empty_count += 1
+            else: 
+                pelletExists_count += 1
+            
+            if empty_count > 5: 
+                print("pellet retrieved!")
+                return True, time.time()
+            if pelletExists_count > 3: 
+                # at this point we will assume that any empty reads that the sensor read were a mistake, so starting over from 0 
+                empty_count = 0
+                pelletExists_count = 0 
+            
+            return False, time.time()
+          
+        
     def dispense_pellet(self): 
         
-        if self.pelletExists(): # there is already a pellet, do not dispense
+        if not self.troughEmpty(): # there is already a pellet, do not dispense
             return False, time.time()   
         else: # dispense pellet 
             

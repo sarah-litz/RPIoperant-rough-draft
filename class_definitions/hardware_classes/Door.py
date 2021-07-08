@@ -16,9 +16,9 @@ TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it
 class Door(): 
     def __init__(self, door_id, this_doors_pins): # dictionary of pin objects is passed in 
         
-        print(">> New Door Created << ")
-        for p in this_doors_pins.values(): 
-            print(p.name)
+        print(f">> New Door Created: {door_id} << ")
+        '''for p in this_doors_pins.values(): 
+            print(p.name)'''
         
         self.door_id = door_id # all pins in this_doors_pins will have the same door_id (e.g. 'door_1')
     
@@ -41,7 +41,7 @@ class Door():
         self.open_override = False # if user needs to manually override door funcitonality w/ buttons, this becomes True
         self.close_override = False
         
-        # Threads for running in the background to moniotry the override buttons 
+        # Threads for running in the background to monitor the override buttons 
         threading.Thread(target=self.monitor_override_button, args=('green',), daemon=True).start() # Manually open door with this button 
         threading.Thread(target=self.monitor_override_button, args=('red',), daemon=True).start()
         
@@ -105,7 +105,7 @@ class Door():
             
     
     def close_door(self): 
-        # QUESTION/TODO: compare this version to the original version of close_door, I changed kinda a lot and want to ensure those changes will work
+
         #check if doors are already closed
         if not self.isOpen(): # False for closed door, True for open door 
             print(f'{self.door_id} is already closed')
@@ -140,7 +140,7 @@ class Door():
             print(f'{self.door_id} should be closed now! ')
         else: 
             print(f'ah crap, door {self.door_id} didnt close!') 
-                
+        return   
         
                 #if not self.door_override[door_ID]:
                 # self.servo.throttle = self.continuous_servo_speed['close'] # QUESTION/TODO: why do we have to continuously set this ?? can this go outside of the while loop? 

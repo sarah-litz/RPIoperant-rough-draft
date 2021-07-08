@@ -44,21 +44,21 @@ class Pin(): # class for a single pin
        
         # GPIO setup 
         if 'lever' in self.name or 'switch' in self.name: # QUESTION/TODO: or 'door' in self.name:
-            print(self.name + ": IN")
+            print(f'{self.name}|{self.number}: IN')
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO 
         elif 'read' in self.name:
-            print(self.name + ": IN")
+            print(f'{self.name}|{self.number}: IN')
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO
         elif 'led' in self.name or 'dispense' in self.name :
             GPIO.setup(self.number, GPIO.OUT)
             GPIO.output(self.number, 0)
-            print(self.name + ": OUT")
+            print(f'{self.name}|{self.number}: OUT')
             return GPIO
         else:
             GPIO.setup(self.number, GPIO.OUT)
-            print(self.name + ": OUT") 
+            print(f'{self.name}|{self.number}: OUT')
             return GPIO
     
  
@@ -104,8 +104,6 @@ class Pin(): # class for a single pin
                 timestamp = time.time()
                 GPIO.remove_event_detect(self.number)
                 return False, timestamp 
-            
-        
     
     
     '''

@@ -18,7 +18,7 @@ pins = {'lever_food':27,
     'door_1_override_close_switch':25,
     'door_2_override_close_switch':5,
     'door_1_state_switch':4,
-    'door_2_state_switch':17,
+    'door_2_state_switch':17, 
     'read_ir_1':12,
     'read_ir_2':13,
 

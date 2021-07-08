@@ -14,9 +14,13 @@ import json
 import time 
 import csv
 import sys 
+from tabulate import tabulate
+
 
 # Third Party Imports
 import pandas as pd 
+from concurrent.futures import ThreadPoolExecutor
+import RPi.GPIO as GPIO
 
 # Local imports 
 from class_definitions.results import Results # manages output data 
@@ -53,6 +57,9 @@ class Script():
         # Experiment Information 
         self.round = 0  
         self.start_time = time.time()
+        
+        # Thread Pool 
+        self.executor = ThreadPoolExecutor(max_workers=20) 
                     
     ''' ------------- Private Methods --------------------'''
     # Make changes to the key values if user added to column "key_val_changes" in csv file
@@ -113,7 +120,8 @@ class Script():
             i = i + 1
             pins_of_door_id = self.get_pins_of_type(f'door_{i}')
         return door_dict
-            
+    
+                  
     '''def setup_Food(self): # this function is only made to create a single instance of Food. Will need changing if there comes a point where more than one is needed. 
     
         food_dict = {}
@@ -140,6 +148,31 @@ class Script():
             else: pass # otherwise, go to next pin in the list 
         
         return pin_dict
+    
+    def print_pin_status(self):
+    
+        print("\033c", end="")
+        sorted_pins = sorted(self.pins.keys())
+        status = []
+        num_pins = len(self.pins)
+        for i in range(0,num_pins,2):
+            
+            if i+1<num_pins:
+                status += [[sorted_pins[i], GPIO.input(self.pins[sorted_pins[i]].number),
+                            sorted_pins[i+1], GPIO.input(self.pins[sorted_pins[i+1]].number)]]
+            else:
+                status += [[sorted_pins[i], GPIO.input(self.pins[sorted_pins[i]].number),
+                            '', '']]
+        print(tabulate(status, headers = ['pin', 'status', 'pin', 'status']))
+        time.sleep(0.05)
+
+        try:
+            while True:
+                self.print_pin_status()
+                time.sleep(0.05)
+        except KeyboardInterrupt:
+            print('\n\bye!')
+            exit()
                 
     ''' TODO: 
     
@@ -190,14 +223,18 @@ class Script():
             Exception('the specified buzz_type passed to the buzz funciton does not exist. check for spelling errors?')
             exit()
         
+        # write to results 
         self.results.event_queue.put([self.round, f'{name} tone start {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])
         self.pins['speaker_tone'].buzz(buzz_len, hz) 
         self.results.event_queue.put([self.round, f'{name} tone complete {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])        
         return buzz_len, hz, name 
 
-    def pulse_sync_line(self, length): 
+    def pulse_sync_line(self, round, length): 
         # calls the function pulse_sync_line defined in the Pin class. 
         # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
+        
+        # write to results 
+        self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         self.pins['gpio_sync'].pulse_sync_line(length)
         return 
     
