@@ -6,8 +6,8 @@
                             dedicated to monitoring the override buttons (green/red buttons).  which if pressed will manually control the doors. 
                             
                             Note on the Override Buttons: 
-                                Green Button (pin: override_close_switch) -- Press to OPEN door 
-                                Red Button (pin: override_open_swtich) -- Press to CLOSE door 
+                                Green Button (pin: override_open_switch) -- Press to OPEN door 
+                                Red Button (pin: override_close_swtich) -- Press to CLOSE door 
 -------------------------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
 
@@ -43,7 +43,8 @@ class Door():
         
         # Pin Setup: pins for the buttons that override the door that is opening/closing at the time 
         self.override_open_switch = this_doors_pins[f'{door_id}_override_open_switch']
-        self.override_close_switch = this_doors_pins[f'{door_id}_override_close_switch']        
+        self.override_close_switch = this_doors_pins[f'{door_id}_override_close_switch'] 
+        print(f'{self.door_id} override pin numbers are: (1) Open Switch: {self.override_open_switch.number} (2) Close Switch: {self.override_close_switch.number}')       
         # Pin Setup: pins for the doors 
         self.state_switch = this_doors_pins[f'{door_id}_state_switch'] # this pin will switch when the door successfully closes/open
         self.lever = this_doors_pins[f'lever_{door_id}'] # lever for controlling the door itself?? 
@@ -88,7 +89,7 @@ class Door():
             print(f'{self.door_id} was already open')
             return
         
-        if self.open_override is True: # override button was pressed, exit. 
+        if self.close_override is True: # override button was pressed, exit. 
             print(f'open {self.door_id} stopped due to override!')
             return 
         
@@ -98,7 +99,7 @@ class Door():
 
         while time.time() < ( start + open_time ): # and not self.door_override[door_id]:
             #wait for the door to open -- we just have to assume this will take the exact same time of <open_time> each time, since we don't have a switch to monitor for if it opens all the way or not. 
-            if self.open_override is True: # check if override button has been pressed during this time 
+            if self.close_override is True: # check if override button has been pressed during this time 
                 print(f'open {self.door_id} stopped due to override!')
                 return 
             # else: 
@@ -130,7 +131,7 @@ class Door():
             # self.open = False
             return 
         
-        if self.close_override is True: # check for door override 
+        if self.open_override is True: # check for door override 
                 print(f'close {self.door_id} stopped due to override!')
                 return 
         
@@ -140,7 +141,7 @@ class Door():
         print('time: ', time.time()-start)
         while self.isOpen() and time.time()-start < TIMEOUT:  
             # repeatedly check the state switch pin to see if the door has shut
-            if self.close_override is True: # checks each iteration to make sure door has not been overriden by button
+            if self.open_override is True: # checks each iteration to make sure door has not been overriden by button
                 print(f'close {self.door_id} stopped due to override!')
                 return 
             #if not GPIO.input(self.state_switch.number): 
@@ -165,27 +166,27 @@ class Door():
     def monitor_override_button(self, color): 
         
         if color is 'green': # button to open door 
-            GPIO.add_event_detect(self.override_close_switch.number, GPIO.FALLING, bouncetime=200)  # wait for button to be pressed 
+            GPIO.add_event_detect(self.override_open_switch.number, GPIO.FALLING, bouncetime=200)  # wait for button to be pressed 
             while True: 
-                if GPIO.event_detected(self.override_close_switch.number): # event was detected  
-                    self.close_override = True 
+                if GPIO.event_detected(self.override_open_switch.number): # event was detected  
+                    self.open_override = True 
                     print('The Green Button was Pressed. Opening the door now...')
                     self.servo_door.throttle = self.continuous_servo_speed['stop'] # immediately stop door motion for quickest response. Then call open door function 
                     self.open_door()
-                    self.close_override = False 
+                    self.open_override = False 
                 if self.stop_threads is True: 
                     break 
 
                     
         elif color is 'red': # button to close door (to override an open/opening door)
-            GPIO.add_event_detect(self.override_open_switch.number, GPIO.FALLING, bouncetime=200) 
+            GPIO.add_event_detect(self.override_close_switch.number, GPIO.FALLING, bouncetime=200) 
             while True: 
-                if GPIO.event_detected(self.override_open_switch.number): 
-                    self.open_override = True 
+                if GPIO.event_detected(self.override_close_switch.number): 
+                    self.close_override = True 
                     print('The Red Button was Pressed. Closing the door now...')
                     self.servo_door.throttle = self.continuous_servo_speed['stop'] # immediately stop door, then call close door 
                     self.close_door()
-                    self.open_override = False 
+                    self.close_override = False 
                 if self.stop_threads is True: 
                     break  
         

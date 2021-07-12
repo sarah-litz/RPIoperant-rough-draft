@@ -1,9 +1,9 @@
 
 ''' --------------------------------------------------------------------------------------------------------------------------------
                                                     filename: Results.py
-                    description: 
-                    
-                    instantiated in
+                    description: instantiated in ScriptClass.py. Assigned to an attribute in the Script class. Results is in charge 
+                    of everything having to do with the output file where we write all of the data collected throughout the experiment's execution. 
+                    Contains a dedicated writer thread that will continuously write to the output file as the results are stored in event_queue. 
 -----------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
 

@@ -53,7 +53,7 @@ class Script():
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
         
         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        self.pins = self.setup_pins_dict() # dictionary of all the individual pin objects
+        self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
            
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
         self.doors = self.setup_Doors() # returns dictionary for each door. 
@@ -87,6 +87,8 @@ class Script():
         # function accepts optional argument: user can choose to pass in their own pin dictionary, otherwise the default pins (defined in operant_cage_settings_default.py) are used 
         
         if (pin_dict==None): # check if user passed in argument. If not, assign pin_dict to the default values. 
+            pin_dict = default_operant_settings.pins
+        elif not pin_dict: # user passed argument, but the dictionary is empty.
             pin_dict = default_operant_settings.pins
         
         # create new dictionary where each element is (pin_name:Pin_class_instance)

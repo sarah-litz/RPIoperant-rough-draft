@@ -13,10 +13,10 @@ pins = {'lever_food':27,
     'read_pellet':16,
     'speaker_tone':21,
     'led_social':20,
-    'door_1_override_open_switch':24,
-    'door_2_override_open_switch':6,
-    'door_1_override_close_switch':25,
-    'door_2_override_close_switch':5,
+    'door_1_override_open_switch':25, # original: 24
+    'door_2_override_open_switch':5, # original: 6
+    'door_1_override_close_switch':24, # original: 25
+    'door_2_override_close_switch':6, # original: 5
     'door_1_state_switch':4,
     'door_2_state_switch':17, 
     'read_ir_1':12,

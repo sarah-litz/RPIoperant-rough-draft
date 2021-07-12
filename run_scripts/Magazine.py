@@ -141,7 +141,8 @@ def run(csv_input, output_dir):
     try: 
  
         key_values = get_key_values()
-        script = Script(csv_input, output_dir, key_values, pin_values=get_pin_values()) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        pin_values = get_pin_values()
+        script = Script(csv_input, output_dir, key_values, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
         # script.print_pin_status()
         run_script(script) 
         
