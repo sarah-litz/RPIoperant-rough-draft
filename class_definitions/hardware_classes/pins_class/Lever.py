@@ -71,16 +71,15 @@ class Lever(Pin):
     
     ''' ---------------- Public Methods --------------- '''
     def extend_lever(self): 
-        # print("(EXTENDING LEVER) lever angle: ", self.angles)
+        
         extend = self.angles[0]
         retract = self.angles[1]
         
         #we will wiggle the lever a bit to try and reduce binding and buzzing
         modifier = 15
-        if extend > retract:
-            extend_start = extend + modifier
-        else:
-            extend_start = extend - modifier
+        if extend > retract: extend_start = extend + modifier
+        else: extend_start = extend - modifier
+        
         
         self.servo_lever.angle = extend_start 
         timestamp = time.time()
@@ -112,9 +111,9 @@ class Lever(Pin):
             else: 
                 print("monitoring was set to True. Waiting to see if there is a lever press... ")
                 event_name, timestamp = self.monitor_lever() 
-                self.all_lever_presses.put(event_name, timestamp)
-                callback_func(self.name, event_name, timestamp)
-                self.monitoring = False # ensures that we only run this once until it gets called from main script again 
+                if event_name: self.all_lever_presses.put(event_name, timestamp) # if event, add to queue of all lever presses
+                callback_func(self.name, event_name, timestamp) # Callback function (lever_event_callback in ScriptClass.py)
+                self.monitoring = False # monitoring should never happen for more than 1 iteration in a row, so we set to False. 
 
             time.sleep(0.025)
         GPIO.remove_event_detect(self.number) # This statement will execute during cleanup() 
@@ -125,8 +124,9 @@ class Lever(Pin):
         print(f'waiting for an event at {self.name}')
         start = time.time()
         presses=0
-        while self.stop_threads is False: # gets set to True in cleanup function 
-            
+
+        while True: # loops until an event is detected or we reach timeout 
+                        
             if GPIO.event_detected(self.number): # monitor for if vole presses the food lever 
                 timestamp = time.time()
                 presses+=1
@@ -140,12 +140,10 @@ class Lever(Pin):
                 print(f'no press detected at {self.name}.')
                 return False, time.time()
             
-            time.sleep(0.025)            
-        return      
+            time.sleep(0.025)       
         
         
         
     def cleanup(self): 
         self.stop_threads = True # forces threads that are monitoring a lever to complete
-        # self.t.join() # wait for thread to exit 
             
