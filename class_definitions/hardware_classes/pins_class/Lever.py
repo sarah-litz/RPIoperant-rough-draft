@@ -1,19 +1,27 @@
 ''' ----------------------------------------------------------------------------------------------------------------------------------------------
-                                                    filename: Lever.py
-                                    description: all of the necessary functions for running the operant pi boxes
+                                                            filename: Lever.py
+                            description: Lever Objects are sublcass of Pin Objects. These are instantiated during pin_setup (in ScriptClass.py)
+                            Gives access to functions that only apply to Levers including extending/retracting levers, and monitoring the Levers for presses. 
 -------------------------------------------------------------------------------------------------------------------------------------------------'''
-import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
-from class_definitions.hardware_classes.pins_class.Pin import Pin
+#!/usr/bin/python3
+
+# standard lib imports 
 import time
 import threading
 from queue import Queue
+
+# third party imports 
 import RPi.GPIO as GPIO
 
-# constants 
-TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
+# local imports 
+import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
+from class_definitions.hardware_classes.pins_class.Pin import Pin
 
-# globals 
+# Globals and Constants 
+TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
 lock = threading.Lock()
+
+
 ''' Lever contains functions that both Door and Food need '''
 
 class Lever(Pin): 

@@ -1,3 +1,11 @@
+''' ----------------------------------------------------------------------------------------------------------------------------------------------
+                                                    filename: Pellet.py
+                            description: Subclass of Pins. Pellet objects are instantiated during pin_setup() in ScriptClass.py
+                            at the moment there is only one pin that is of type "Pellet", and that is the pin 'read_pellet'. 
+                            Pellet Class contains functions that only apply to Pellets including functions that work together to 
+                            dispense a pellet and track if that pellet gets retrieved from the trough. 
+-------------------------------------------------------------------------------------------------------------------------------------------------'''
+#!/usr/bin/python3
 
 #standard lib imports 
 import time 

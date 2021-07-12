@@ -1,30 +1,37 @@
 ''' ----------------------------------------------------------------------------------------------------------------------------------------------
-                                                    filename: Hardware.py
-                                    description: all of the necessary functions for running the operant pi boxes
+                                                    filename: Pin.py
+                            description: Pin objects are instantiated in pin_setup() in ScriptClass.py. Pin Class is the parent class to Lever and Pellet. 
+                            ScriptClass defines a descriptive name for each of the pins, and then the Pin class pairs those names with an actual GPIO pin. 
+                            Pin Class executes (almost) all of the direct interaction with the GPIO pins. 
+                            
+                            functions defined that should only get called by a specific pin: 
+                                - pulse_sync_line only gets called with 'gpio_sync' pin 
+                                - buzz only gets called with 'speaker_tone' pin
+                            
+                            functions defined that are called by any pin: detect_event, and all the setup funcitons
 -------------------------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
 
 # standard lib imports 
 import time
-from datetime import datetime
+from queue import Queue
+import os 
+if os.system('sudo lsof -i TCP:8888'): #activates the pigpio daemon that runs PWM, unless its already running
+    os.system('sudo pigpiod')
 
 # third party imports 
 import RPi.GPIO as GPIO
 from gpiozero import LED, Button 
 from adafruit_servokit import ServoKit
 import pigpio
-import os 
-if os.system('sudo lsof -i TCP:8888'): #activates the pigpio daemon that runs PWM, unless its already running
-    os.system('sudo pigpiod')
-from queue import Queue
 
 # local imports 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
-# from class_definitions.hardware_classes.lever import (Door) # Parent Class: Lever, Subclass: Door  
 
-# Globals 
+# globals and constants 
 kit = ServoKit(channels=16)
 GPIO.setmode(GPIO.BCM) # set up BCM GPIO numbering 
+
 
 class Pin(): # class for a single pin 
     def __init__(self, pin_name, pin_number, gpio_obj=None): 

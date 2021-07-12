@@ -1,3 +1,15 @@
+''' ----------------------------------------------------------------------------------------------------------------------------------------------
+                                                            filename: Door.py
+                            description: Door objects are instantiated in ScriptClass.py in door_setup. This happens after pin_setup is complete
+                            because Door class needs to access/build upon multiple pins, so we must wait till those have already been set. 
+                            Door.py gives access to functions that only apply to Doors including opening/closing doors and having threads that are 
+                            dedicated to monitoring the override buttons (green/red buttons).  which if pressed will manually control the doors. 
+                            
+                            Note on the Override Buttons: 
+                                Green Button (pin: override_close_switch) -- Press to OPEN door 
+                                Red Button (pin: override_open_swtich) -- Press to CLOSE door 
+-------------------------------------------------------------------------------------------------------------------------------------------------'''
+#!/usr/bin/python3
 
 # standard lib imports
 import time 
@@ -9,7 +21,7 @@ import RPi.GPIO as GPIO
 # local imports 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 
-
+# globals 
 TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
 
         
