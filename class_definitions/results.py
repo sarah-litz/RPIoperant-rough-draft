@@ -28,7 +28,7 @@ class Results():
         self.event_queue = Queue()
         self.event_lock = threading.Lock()
         self.writer_thread =  threading.Thread(target=self.monitor_for_event, args=(), daemon=True)
-
+        self.stop_threads = False 
 
     ''' --------- Private Methods ----------- '''    
     def generate_output_file(self, csv_input, output_dir): # called at instance declaration only (called from w/in class, no need to call from different module)

@@ -31,6 +31,7 @@ from class_definitions.results import Results # manages output data
 lever_q = Queue()
 lock = threading.Lock()
 event_lock = threading.Lock()
+continue_monitoring = True 
 
 def setup_results(): 
     # prompt user for experiment input 
@@ -74,7 +75,15 @@ def monitor_for_event(results): # TODO: def getting stuck somewhere with this th
         results.record_event(event)
         results.event_queue.task_done()
       
+
+def continuous_monitor(lever): 
     
+    GPIO.add_event_detect(lever.number, GPIO.RISING, bouncetime=200)
+    while continue_monitoring: 
+        # continue to track how many events have been detected 
+        if GPIO.event_detected(lever.number): 
+            return time.time()
+        
 def monitor_lever(results): 
 
     lock.acquire() # ** note lock aquire and release are atomic operations 
@@ -84,7 +93,8 @@ def monitor_lever(results):
     # call detect event for the lever 
     lever.extend_lever()
     
-    event_timestamp = lever.detect_event(3)
+    # event_timestamp = lever.detect_event(3)
+    event_timestamp = continuous_monitor(lever)
     if event_timestamp is not False: 
         # event detected for current lever, add to event_queue and flag the event object to let writer thread know 
         results.event_queue.put(['round#', lever.name, event_timestamp])
@@ -113,7 +123,7 @@ def main():
             
     #    executor.map(monitor_lever, (lever_q, results,)) # arg 1 is function name, arg 2 is the arguments for that function
     for i in range(4):  # creates 4 worker threads 
-        threading.Thread(target=monitor_lever, args=(lever_q, results,), daemon=True).start()
+        threading.Thread(target=monitor_lever, args=(results,), daemon=True).start()
         
     # send task requests to the worker thread
     for item in my_levers:

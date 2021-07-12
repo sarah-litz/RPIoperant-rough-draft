@@ -20,7 +20,7 @@ class Pellet(Pin):
         # pin of this type will always be the 'read_pellet' pin. 
         self.servo_pellet = default_operant_settings.servo_dict['dispense_pellet']
         self.continuous_servo_speeds = default_operant_settings.continuous_servo_speeds['dispense_pellet']
-        
+        self.type = 'Pellet'
         # attributes for tracking the current state of the pellet
         # self.pellet_exists = False # True if pellet is there, False if no pellet 
     
@@ -46,14 +46,18 @@ class Pellet(Pin):
             else: 
                 pelletExists_count += 1
             
-            if empty_count > 5: 
-                print("pellet retrieved!")
-                return True, time.time()
             if pelletExists_count > 3: 
                 # at this point we will assume that any empty reads that the sensor read were a mistake, so starting over from 0 
                 empty_count = 0
                 pelletExists_count = 0 
+                
+            if empty_count > 5: 
+                print("pellet retrieved!")
+                return True, time.time()
             
+            else: 
+                time.sleep(0.025)
+
             return False, time.time()
           
         
@@ -86,6 +90,9 @@ class Pellet(Pin):
                     return True 
                 if (time.time() > start_time+3): # if 3 seconds have passed
                     return False'''  
+                    
+    def cleanup(self): 
+        pass 
                     
                 
                 

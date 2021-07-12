@@ -1,9 +1,13 @@
-
+''' ----------------------------------------------------------------------------------------------------------------------------------------------
+                                                    filename: Lever.py
+                                    description: all of the necessary functions for running the operant pi boxes
+-------------------------------------------------------------------------------------------------------------------------------------------------'''
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 from class_definitions.hardware_classes.pins_class.Pin import Pin
 import time
 import threading
 from queue import Queue
+import RPi.GPIO as GPIO
 
 # constants 
 TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
@@ -21,9 +25,15 @@ class Lever(Pin):
         
         self.servo_lever = self.set_servo()
         self.angles = self.set_lever_angle() # gets set in Food.py and Door.py 
+        self.type = 'Lever'
         
         # self.continuous_servo_speed = self.set_continuous_servo_speed()
-       
+        self.all_lever_presses = Queue()
+        '''self.t = self.monitor_forever = threading.Thread(target=self.background_monitoring, daemon=True)
+        self.t.start()'''
+        self.press_timeout = 0 
+        self.required_presses = 1
+        self.monitoring = False 
         
     ''' ------------- Private Methods -------------- '''
     def set_lever_angle(self):     
@@ -87,7 +97,55 @@ class Lever(Pin):
         return timestamp
     
     
+    def monitor_lever_continuous(self, callback_func): 
+        # purpose is to have a constant monitoring of any presses that occur on the lever. 
+        # TODO/QUESTION: i am unclear on what I should be doing with this collected information?? so for now I am just gonna let it sit in a queue 
+        GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=500)
+        print(f'background thread running to look for events at {self.name}')
+        
+        while self.stop_threads is False: 
+             
+            if self.monitoring is False: 
+                if GPIO.event_detected(self.number): 
+                    self.all_lever_presses.put('lever press outside of designated timeframe', time.time())
+                    
+            else: 
+                print("monitoring was set to True. Waiting to see if there is a lever press... ")
+                event_name, timestamp = self.monitor_lever() 
+                self.all_lever_presses.put(event_name, timestamp)
+                callback_func(self.name, event_name, timestamp)
+                self.monitoring = False # ensures that we only run this once until it gets called from main script again 
 
-    
+            time.sleep(0.025)
+        GPIO.remove_event_detect(self.number) # This statement will execute during cleanup() 
 
+        
+    def monitor_lever(self): 
+        
+        print(f'waiting for an event at {self.name}')
+        start = time.time()
+        presses=0
+        while self.stop_threads is False: # gets set to True in cleanup function 
+            
+            if GPIO.event_detected(self.number): # monitor for if vole presses the food lever 
+                timestamp = time.time()
+                presses+=1
+                # self.lever_press_queue.put(time.time())
+                if presses == self.required_presses: # TODO/QUESTION: should there be room for error here?? i.e. >= press_num instead of == press_num
+                    self.pin_event_queue.put(f'{self.required_presses} lever presses')
+                    print(f'{self.required_presses} lever presses were detected')
+                    return 'lever press', timestamp    
+            
+            if time.time() - start > self.press_timeout:
+                print(f'no press detected at {self.name}.')
+                return False, time.time()
+            
+            time.sleep(0.025)            
+        return      
+        
+        
+        
+    def cleanup(self): 
+        self.stop_threads = True # forces threads that are monitoring a lever to complete
+        # self.t.join() # wait for thread to exit 
             

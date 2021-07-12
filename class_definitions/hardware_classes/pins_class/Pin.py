@@ -16,11 +16,13 @@ import pigpio
 import os 
 if os.system('sudo lsof -i TCP:8888'): #activates the pigpio daemon that runs PWM, unless its already running
     os.system('sudo pigpiod')
+from queue import Queue
 
 # local imports 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 # from class_definitions.hardware_classes.lever import (Door) # Parent Class: Lever, Subclass: Door  
 
+# Globals 
 kit = ServoKit(channels=16)
 GPIO.setmode(GPIO.BCM) # set up BCM GPIO numbering 
 
@@ -31,6 +33,9 @@ class Pin(): # class for a single pin
         self.number = pin_number
         self.gpio_obj = self.gpio_setup() # TODO: get rid of obj version 
         self.pi = pigpio.pi()
+        self.stop_threads = False # used in continuous monitoring 
+        self.event_count = 0 # incremented each time an event is counted. This should get reset each new round. 
+        self.pin_event_queue = Queue()
         self.type = 'Pin'
     
     ''' --------- Private Setup Methods --------------'''
@@ -104,8 +109,13 @@ class Pin(): # class for a single pin
                 timestamp = time.time()
                 GPIO.remove_event_detect(self.number)
                 return False, timestamp 
+            time.sleep(0.025)
+
     
     
+    def cleanup(): 
+        pass 
+            
     '''
     
     # --------------- NOT IN USE ANYMORE ---------

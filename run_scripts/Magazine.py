@@ -34,10 +34,18 @@ def get_key_values():
                                     ]) 
 
 
+        
 '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
 def run_script(script):  # csv_input is the row that corresponds with the current script getting run 
- 
 
+    ''' ~ ~ ~ callback function for what we want to happen when there is a lever press detected ~ ~ ~ '''
+    '''def lever_event_callback(event_name, timestamp): 
+        print(f'{event_name} occurred: callback function exeucting now.')
+        script.executor.submit(script.pulse_sync_line, script.round, length=0.25) # Pulse for Event: Lever Press 
+        script.executor.submit(script.buzz, 'pellet_buzz') # play sound for lever press  
+        results.event_queue.put([script.round, event_name, timestamp-script.start_time]) # record event in event queue'''
+    ''' ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ '''
+    
     results = script.results # make results instanceto give output data so it's recorded&analyzed 
     
     results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
@@ -48,11 +56,12 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         if script.doors[d].isOpen() is True:  
             script.doors[d].close_door() 
        
-     
-    # pulse to signify start of experiment 
-   #  results.event_queue.put([script.round, f'pulse sync line (0.5)', time.time()-script.start_time])
-    script.executor.submit(script.pulse_sync_line, script.round, length=0.5)
-    # script.pins['gpio_sync'].pulse_sync_line(length=0.5) # Event: Experiment Start
+    levers = ['lever_food', 'lever_door_1', 'lever_door_2']
+    for l in levers: # create thread for fulltime monitoring of each lever
+        script.executor.submit(script.pins[l].monitor_lever_continuous, callback_func=script.lever_event_callback)
+    
+
+    script.executor.submit(script.pulse_sync_line, script.round, length=0.5) # Pulse Event: Experiment Start 
        
     '''________________________________________________________________________________________________________________________________________'''
     
@@ -66,36 +75,28 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         script.round = count+1
         print("round #",script.round)
         
-        # signal that we are on a new round 
-        # results.event_queue.put([script.round, f'pulse sync line (0.1)', time.time()-script.start_time])
-        script.executor.submit(script.pulse_sync_line, script.round, length=0.1)
-        # script.pulse_sync_line(length=0.1) # Pulse for Event: New Round Start
+        script.executor.submit(script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round 
         results.event_queue.put([script.round, 'new round', time.time()-script.start_time]) # add to timestamp_queue aka event_queue 
         script.executor.submit(script.buzz, 'round_buzz') # play sound for round start (type: 'round_buzz')
-    
+
         # extend food lever
         future_extend = script.executor.submit(script.pins['lever_food'].extend_lever) 
         timestamp_extend = future_extend.result() 
         results.event_queue.put([script.round, 'food lever out', timestamp_extend-script.start_time])
 
+        # begin monitoring 
+        script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
+        script.pins['lever_food'].press_timeout = script.key_values['timeII'] # num of seconds vole has to press lever 
+        script.pins['lever_food'].monitoring=True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
+        
+        
+        time.sleep(script.pins['lever_food'].press_timeout) # pause while we are waiting on lever press 
         # monitor for if vole presses the food lever 
-        timeout = script.key_values['timeII'] # timeout value for lever press detection
-        future_lever_food = script.executor.submit(script.pins['lever_food'].detect_event,timeout)
-        lever_event, timestamp_press = future_lever_food.result()
+        '''future_lever_food = script.executor.submit(script.pins['lever_food'].monitor_lever,press_num=1,timeout=timeout)
+        lever_event, timestamp_press = future_lever_food.result()'''
         
         time_II_start = time.time() # question: not sure wat this gets used for 
 
-        if lever_event:  # lever was pressed
-            # results.event_queue.put([script.round, f'pulse sync line (0.25)', time.time()-script.start_time])
-            script.executor.submit(script.pulse_sync_line, script.round, length=0.25) # Pulse for Event: Lever Press 
-            script.executor.submit(script.buzz, 'pellet_buzz') # play sound for lever press  
-            results.event_queue.put([script.round, 'food lever pressed', timestamp_press-script.start_time]) # record event in event queue
-            # TODO: dispense pellet             
-        else: # else, timed out meaning vole did not press lever    
-            script.buzz('pellet_buzz') # play sound 
-            # TODO: dispense pellet anyways
-            # TODO/QUESTION: should i write 'no press detected' to output file? 
-            print('no press detected')
         
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
@@ -141,7 +142,7 @@ def run(csv_input, output_dir):
  
         key_values = get_key_values()
         script = Script(csv_input, output_dir, key_values, pin_values=get_pin_values()) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
-        script.print_pin_status()
+        # script.print_pin_status()
         run_script(script) 
         
     except KeyboardInterrupt: 

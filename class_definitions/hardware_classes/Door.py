@@ -42,9 +42,11 @@ class Door():
         self.close_override = False
         
         # Threads for running in the background to monitor the override buttons 
-        threading.Thread(target=self.monitor_override_button, args=('green',), daemon=True).start() # Manually open door with this button 
-        threading.Thread(target=self.monitor_override_button, args=('red',), daemon=True).start()
-        
+        self.stop_threads = False 
+        self.t1 = threading.Thread(target=self.monitor_override_button, args=('green',), daemon=True)
+        self.t1.start() # Manually open door with this button 
+        self.t2 = threading.Thread(target=self.monitor_override_button, args=('red',), daemon=True)
+        self.t2.start()
         
         
     ''' DOOR METHODS '''
@@ -159,6 +161,8 @@ class Door():
                     self.servo_door.throttle = self.continuous_servo_speed['stop'] # immediately stop door motion for quickest response. Then call open door function 
                     self.open_door()
                     self.close_override = False 
+                if self.stop_threads is True: 
+                    break 
 
                     
         elif color is 'red': # button to close door (to override an open/opening door)
@@ -170,6 +174,8 @@ class Door():
                     self.servo_door.throttle = self.continuous_servo_speed['stop'] # immediately stop door, then call close door 
                     self.close_door()
                     self.open_override = False 
+                if self.stop_threads is True: 
+                    break  
         
         else: 
             # stop moving the door and throw error 
@@ -186,11 +192,15 @@ class Door():
         # kill threads 
         ''' if self.isOpen(): 
             self.close_door() '''
+        self.stop_threads = True 
         GPIO.remove_event_detect(self.override_open_switch.number)
         GPIO.remove_event_detect(self.override_close_switch.number)
 
         # emergency stop: 
         self.servo_door.throttle = self.continuous_servo_speed['stop']  # force shutoff if any servos are left moving
+        
+        self.t1.join()
+        self.t2.join()
         
     
              

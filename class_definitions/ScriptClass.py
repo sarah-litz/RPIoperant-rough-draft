@@ -15,6 +15,8 @@ import time
 import csv
 import sys 
 from tabulate import tabulate
+import threading 
+from queue import Queue, Empty
 
 
 # Third Party Imports
@@ -30,7 +32,10 @@ from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass
 from class_definitions.hardware_classes.pins_class.Pellet import Pellet # subclass to Pin
 from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins
 
+# Globals 
+eventQ_lock = threading.Lock()
 
+ 
 class Script(): 
     ''' 
         class Script: 
@@ -174,17 +179,7 @@ class Script():
             print('\n\bye!')
             exit()
                 
-    ''' TODO: 
-    
-    -threads or1 and or2, w/ target fn.override_door_1 and fn.override_door_2 
-    -should be created for every Script instance, so add to __init__ 
-        self.or1_tid = threading.Thread(target = fn.override_door_1, daemon=True)
-        self.or2_tid = threading.Thread(target = fn.override_door_2, daemon = True)
-
-
-
-    '''
-    
+                    
     def countdown_timer(self, timeinterval, event): 
         print("\r")
         while timeinterval:
@@ -232,19 +227,68 @@ class Script():
     def pulse_sync_line(self, round, length): 
         # calls the function pulse_sync_line defined in the Pin class. 
         # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
-        
         # write to results 
         self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         self.pins['gpio_sync'].pulse_sync_line(length)
         return 
     
+    def lever_event_callback(self, object, event_name, timestamp): 
+        if event_name: 
+            print(f'{event_name} occurred for {object}!')
+            self.executor.submit(self.pulse_sync_line, self.round, length=0.25) # Pulse for Event: Lever Press 
+            self.executor.submit(self.buzz, 'pellet_buzz') # play sound for lever press  
+            self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) # record event in event queue
+        else: 
+            # event was not detected in specified timeframe. 
+            print(f'{event_name} timed out. No press detected for {object}.')
+            # TODO/QUESTION: should i write 'no press detected' to output file? 
+            self.executor.submit(self.buzz, 'pellet_buzz')
     
-    
+    '''def monitoring_callback( pin, event_name, timestamp ): 
+        pin.event_count += 1 
+    def monitor_and_write_continuously(self, pin, event_name): 
+        # lambda name : 
+        while pin.stop_threads: 
+            GPIO.add_event_detect(pin.number, GPIO.RISING, callback = self.monitoring_callback(pin, event_name, time.time()), bouncetime=200)'''
+            
+    '''def monitor_pin_events(self, pin): # starts up thread thats only job is to sit and see if any pins add an event to their own pin_event_queue
+        while pin.stop_threads is False: 
+            eventQ_lock.acquire
+            event, timestamp = pin.pin_event_queue.get() # automatically waits if there is no event 
+            eventQ_lock.release() 
+        #   ^^ is this correct syntax? I would be removing a tuple from the queue   
+            if event is True: 
+                self.results.event_queue.put(event, timestamp)
+        #       buzz 
+        #       pulse sync line
+        #       other shit? 
+            pin.pin_event_queue.task_done()
+        print(f'exiting from monitoring for {pin.name} events')
+        pin.pin_event_queue.join()
+        return 
+        # when the pin is no longer monitoring for events, make sure there is nothing left on queue and return 
+        # if Queue is Empty: return 
+        # else: idk what we would do here. Panic?''' 
+        
+         
     def cleanup(self): 
         # make sure all doors closed and no servos are running still  
+        print('script cleanup!')
         for d in self.doors: 
             self.doors[d].cleanup() # shuts doors and shuts off door servos 
-        self.results.cleanup() # finishes writing stuff in event_queue to output file 
+        self.results.cleanup() # finishes writing stuff in event_queue to output file
+        
+        lever_pins = self.get_pins_of_type('lever')        
+        for i in lever_pins: 
+            print(f'I recorded a total of {lever_pins[i].all_lever_presses.qsize()} lever presses for {lever_pins[i].name}')
+            lever_pins[i].cleanup()
+        pellet_pins = self.get_pins_of_type('pellet')
+        for i in pellet_pins: 
+            pellet_pins[i].cleanup()
+        
+        GPIO.cleanup() # cleans up all gpio pins 
+
+        
         return     
 
         
