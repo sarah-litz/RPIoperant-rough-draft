@@ -16,6 +16,8 @@ import threading
 import pandas as pd
 import socket
 
+# Local Imports 
+from class_definitions.AnalyzeResults import Analysis
 
 
 
@@ -29,8 +31,11 @@ class Results():
         self.event_lock = threading.Lock()
         self.writer_thread =  threading.Thread(target=self.monitor_for_event, args=(), daemon=True)
         self.stop_threads = False 
+        self.header = csv_input['user'], csv_input['script'], csv_input['vole']
+        
 
-    ''' --------- Private Methods ----------- '''    
+
+    ''' --------- Private Methods ----------- '''            
     def generate_output_file(self, csv_input, output_dir): # called at instance declaration only (called from w/in class, no need to call from different module)
             
         # autogenerate output file name 
@@ -102,21 +107,11 @@ class Results():
          # TODO/LEAVING OFF HERE!! 
          # probably first want to better format how I am writing to the output files cause looks not gr8 rn. 
     def analysis(self): 
+        ana = Analysis(self.header, self.filepath) # creates instance of Analysis
+        ana.summary()
+        ana.by_round()
         
-        print("something will happen here to analyze the data but idg what that is yet. (from resutls.py)")
-        # Read In Data 
-        df = pd.read_csv(self.filepath, skiprows=1) # does not read the header into the dataframe 
-        print(df.head())
-        print('-------------------------------')
-        self.pellet_latency(df)
-    
-    
-    def pellet_latency(self, df): 
-        pellet_df = df.loc[:, 'Event']
-        # print(pellet_df.loc['pellet dispensed', 'pellet retrieved'])
-        # print(pellet_df.head())
         
-    
     ''' Functions to help with Exiting the Program '''          
     def cleanup(self): # finish writing and close file
         with open(self.filepath, 'a') as file: 

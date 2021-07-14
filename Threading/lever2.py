@@ -25,7 +25,7 @@ from adafruit_servokit import ServoKit
 # local imports  
 from class_definitions.hardware_classes.pins_class.Lever import Lever # import pin class
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
-from class_definitions.results import Results # manages output data 
+from class_definitions.Results import Results # manages output data 
 
 # Global Vars 
 lever_q = Queue()

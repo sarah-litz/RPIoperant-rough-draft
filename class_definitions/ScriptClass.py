@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 import RPi.GPIO as GPIO
 
 # Local imports 
-from class_definitions.results import Results # manages output data 
+from class_definitions.Results import Results # manages output data 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin class
 from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass to Pin
@@ -127,20 +127,7 @@ class Script():
             pins_of_door_id = self.get_pins_of_type(f'door_{i}')
         return door_dict
     
-                  
-    '''def setup_Food(self): # this function is only made to create a single instance of Food. Will need changing if there comes a point where more than one is needed. 
-    
-        food_dict = {}
-        type_keywords = ['food', 'pellet']
-        pins_of_food = {}
-        for keyword in type_keywords:   
-            pins_of_food.update(self.get_pins_of_type(keyword)) # combine dictionaries 
         
-        food_dict['lever_food'] = Food(pins_of_food)
-        return food_dict['lever_food'] # make instance of Food and return  '''
-                    
-           
-    
     ''' ------------- Public Methods ------------------------'''
 
     def get_pins_of_type(self, type): 
@@ -190,7 +177,13 @@ class Script():
             time.sleep(1)
             timeinterval -= 1
 
-
+    def pulse_sync_line(self, round, length): 
+        # calls the function pulse_sync_line defined in the Pin class. 
+        # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
+        # write to results 
+        self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
+        self.pins['gpio_sync'].pulse_sync_line(length)
+        return 
 
     def buzz(self, buzz_type): 
         # play sound function 
@@ -226,16 +219,11 @@ class Script():
         return buzz_len, hz, name 
 
 
-    def pulse_sync_line(self, round, length): 
-        # calls the function pulse_sync_line defined in the Pin class. 
-        # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
-        # write to results 
-        self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
-        self.pins['gpio_sync'].pulse_sync_line(length)
-        return 
-
-   
     def lever_event_callback(self, object, event_name, timestamp): 
+        # A reference to this function is passed to monitor_lever_continuous in Lever.py. Gets called if a lever press occurs while lever.monitoring is True
+        #   Arguments: (1) object is the name of the lever that was pressed 
+        #              (2) event_name and timestamp contains the information we want to write to output file 
+                   
         if event_name: 
             print(f'{event_name} occurred for {object}!')
             self.executor.submit(self.pulse_sync_line, self.round, length=0.25) # Pulse for Event: Lever Press 

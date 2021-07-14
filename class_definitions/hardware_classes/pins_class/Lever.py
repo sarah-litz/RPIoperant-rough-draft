@@ -142,7 +142,7 @@ class Lever(Pin):
                 if presses == self.required_presses: # TODO/QUESTION: should there be room for error here?? i.e. >= press_num instead of == press_num
                     self.pin_event_queue.put(f'{self.required_presses} lever presses')
                     print(f'{self.required_presses} lever presses were detected')
-                    return 'lever press', timestamp    
+                    return f'{self.name} lever press', timestamp    
             
             if time.time() - start > self.press_timeout:
                 print(f'no press detected at {self.name}.')

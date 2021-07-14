@@ -10,5 +10,5 @@
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
     "python.pythonPath": "/usr/bin/python3",
-    "python.analysis.extraPaths": ["RPIoperant_rough-draft/class_definitions/ScriptClass.py", "RPIoperant_rough-draft/run_scripts/Magazine.py", "RPIoperant_rough_draft/class_definitions/hardware_classes/pins_class/Lever.py"]
+    "python.analysis.extraPaths": ["RPIoperant_rough-draft/class_definitions/ScriptClass.py", "RPIoperant_rough-draft/run_scripts/Magazine.py", "RPIoperant_rough_draft/class_definitions/hardware_classes/pins_class/Lever.py",  "RPIoperant_rough_draft/class_definitions/hardware_classes/pins_class/Lever.py", "RPIoperant_rough_draft/class_definitions/Results.py"]
 }
