@@ -13,7 +13,6 @@ import csv
 from pathlib import Path
 from queue import Queue, Empty
 import threading
-import pandas as pd
 import socket
 
 # Local Imports 
@@ -86,11 +85,9 @@ class Results():
             # , name, time = event.split(',')
             writer = csv.writer(file, delimiter = ',')
             writer.writerow([round, name, time]) 
-            # file.writerow([f'{round}', f'{name}', f'{time}']) 
     
     
-    ''' Thread Function '''
-    
+    ''' Writer Thread Function '''
     def monitor_for_event(self): # for tracking & collecting data 
     # thread that waits for stuff to get added to the event queue and if something is there, it will write to results file.
         
@@ -104,8 +101,6 @@ class Results():
     
     
     ''' Data Analysis Functions ''' 
-         # TODO/LEAVING OFF HERE!! 
-         # probably first want to better format how I am writing to the output files cause looks not gr8 rn. 
     def analysis(self): 
         ana = Analysis(self.header, self.filepath) # creates instance of Analysis
         ana.summary()
@@ -122,6 +117,8 @@ class Results():
             file.flush()
             file.close()
         return
+    
+    
         
     ''' 
     (TODO)  

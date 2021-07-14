@@ -1,7 +1,13 @@
 
 ''' --------------------------------------------------------------------------------------------------------------------------------
                                                     filename: AnalyzeResults.py
-                    description: 
+                                        description: contains the class definition for Analysis() 
+                    Analysis is instantiated by the Results class in the function analysis(). This gets called when a script has finished running all of its rounds completely. This file is the only one (at the moment) that 
+                    uses pandas library. Functions here have to do with taking the data that has been collected by the Results class and running analysis functions on that data. 
+                    
+                    Functions: 
+                        The summary() function is for summarizing trends from all of the rounds that were run. 
+                        The by_round() function is for summarizing trends per round. 
 -----------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
 
