@@ -34,6 +34,7 @@ from class_definitions.hardware_classes.Door import Door # built on top of multi
 # Globals 
 eventQ_lock = threading.Lock()
 
+
  
 class Script(): 
     ''' 
@@ -64,6 +65,9 @@ class Script():
         
         # Thread Pool 
         self.executor = ThreadPoolExecutor(max_workers=20) 
+        self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
+        self.futures = []
+        self.stop_threads = False 
                     
     ''' ------------- Private Methods --------------------'''
     # Make changes to the key values if user added to column "key_val_changes" in csv file
@@ -167,7 +171,32 @@ class Script():
             print('\n\bye!')
             exit()
                 
-                    
+    
+    def monitor_for_future_results(self): 
+        # separate thread 
+        while True: 
+            ''' loop thru self.futures list(or queue?). Check if the future is done running. If it is, 
+            then get its result and write them to event_queue. If it is not, then leave it be and go to the 
+            next element. Repeat until the round has finished. 
+            ''' 
+            for future in self.futures: 
+                if future.done(): 
+                    self.futures.remove(future) # remove this future from the list
+                    event_name, timestamp, ifEvent = future.result() # get result
+                    print(f'Future Result: {self.round}, {event_name}, {timestamp-self.start_time}')
+                    self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) 
+                else: 
+                    # we will loop back around to this future later 
+                    time.sleep(0.25)
+            
+            if self.stop_threads is True: 
+                if len(self.futures) == 0: 
+                    print('all futures were accounted for; finished cleanly')
+                    return 
+                else: 
+                    print('some futures were not able to finish')
+                    return 
+                           
     def countdown_timer(self, timeinterval, event): 
         print("\r")
         while timeinterval:
@@ -238,6 +267,10 @@ class Script():
     def cleanup(self): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
+        
+        self.stop_threads = True # let
+        self.executor_manager.join() # waits so last loop thru can finish 
+        
         for d in self.doors: 
             self.doors[d].cleanup() # shuts doors and shuts off door servos 
         self.results.cleanup() # finishes writing stuff in event_queue to output file
@@ -249,9 +282,9 @@ class Script():
         pellet_pins = self.get_pins_of_type('pellet')
         for i in pellet_pins: 
             pellet_pins[i].cleanup()
+    
+        # GPIO.cleanup() # cleans up all gpio pins 
         
-        GPIO.cleanup() # cleans up all gpio pins 
-       
         return     
 
         

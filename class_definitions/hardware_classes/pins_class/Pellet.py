@@ -41,7 +41,7 @@ class Pellet(Pin):
         'Monitoring for pellet retrieval...'
         if self.troughEmpty(): 
             print('there is no pellet in trough, so it is pointless to monitor for pellet_retrieval so returning from this function now!')
-            return False, time.time()
+            return 'no pellet in trough to retrieve', time.time(), False
         
         time_start = time.time()
         empty_count = 0 # counts number of times that the pin reads the trough as being empty 
@@ -61,18 +61,18 @@ class Pellet(Pin):
                 
             if empty_count > 5: 
                 print("pellet retrieved!")
-                return True, time.time()
+                return 'pellet retrieved', time.time(), True
             
             else: 
                 time.sleep(0.025)
 
-            return False, time.time()
+        return 'pellet not retrieved', time.time(), False
           
         
     def dispense_pellet(self): 
         
         if not self.troughEmpty(): # there is already a pellet, do not dispense
-            return False, time.time()   
+            return 'skipped pellet dispense', time.time(), False   
         else: # dispense pellet 
             
            # QUESTION: confused on some aspects of the original dispense_pellet function that is written. 
@@ -80,14 +80,14 @@ class Pellet(Pin):
             print('SERVO FOR THE PELLET IS: ', self.servo_pellet)
             self.servo_pellet.throttle = self.continuous_servo_speeds['fwd'] # start moving servo 
             print('SERVO SPEED FOR THE PELLET IS: ', self.continuous_servo_speeds['fwd'])
-            event, event_timestamp = self.detect_event(timeout=3, edge=GPIO.FALLING) 
+            event_bool, event_timestamp = self.detect_event(timeout=3, edge=GPIO.FALLING) 
             self.continuous_servo_speeds['stop']
-            if event: 
+            if event_bool: 
                 # a pellet was dispensed  
-                return event, event_timestamp 
+                return 'pellet dispensed', event_timestamp, event_bool 
             else: 
                 # timed out, pellet did not get dispensed.
-                return event, event_timestamp  
+                return 'pellet dispense timeout', event_timestamp, event_bool 
             
             '''timeout = False; start_time = time.time()
             while timeout is False: 

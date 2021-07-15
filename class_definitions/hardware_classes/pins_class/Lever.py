@@ -93,7 +93,7 @@ class Lever(Pin):
         timestamp = time.time()
         time.sleep(0.1)
         self.servo_lever.angle = extend 
-        return timestamp
+        return 'levers out', timestamp, True
         
     def retract_lever(self): 
         print("(RETRACTING LEVER) lever angle: ", self.angles)
@@ -101,7 +101,7 @@ class Lever(Pin):
         
         timestamp = time.time() 
         self.servo_lever.angle = retract 
-        return timestamp
+        return 'levers retracted', timestamp, True
     
     
     def monitor_lever_continuous(self, callback_func): 

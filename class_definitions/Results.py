@@ -30,7 +30,7 @@ class Results():
         self.event_lock = threading.Lock()
         self.writer_thread =  threading.Thread(target=self.monitor_for_event, args=(), daemon=True)
         self.stop_threads = False 
-        self.header = csv_input['user'], csv_input['script'], csv_input['vole']
+        self.header = csv_input['user'], csv_input['script'], csv_input['vole'], csv_input['day']
         
 
 
@@ -99,7 +99,7 @@ class Results():
             self.record_event(event) # function that writes to the output file 
             self.event_queue.task_done()
     
-    
+                
     ''' Data Analysis Functions ''' 
     def analysis(self): 
         ana = Analysis(self.header, self.filepath) # creates instance of Analysis

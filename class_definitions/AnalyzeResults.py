@@ -33,7 +33,7 @@ class Analysis():
 
         summary_dict = {}
         
-        num_rounds = self.df['Round'].nunique() # number of rounds 
+        num_rounds = self.df['Round'].nunique() - 1 # number of rounds ( does not include the 0th round )
         summary_dict["number of rounds"] = [num_rounds]
         
         lever_presses = self.df.loc[self.df['Event'].str.contains("press")]
