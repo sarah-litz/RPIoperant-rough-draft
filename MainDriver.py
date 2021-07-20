@@ -112,8 +112,7 @@ def startup():
             # check if user wants to run next script  
             if (run_next_check(scriptList[count]) == False ): 
                 print(f'see you l8er')
-                # GPIO.cleanup()
-                exit()
+                break 
             else: 
             # load in new script 
                 print(f'loading in new script: {scriptList[count]}')
@@ -138,7 +137,9 @@ def startup():
             # when script is finished running, make sure that it gets removed from this list!
      
     # All Scripts Done
+    print('GPIO cleanup called, experiment finished ~(˘▾˘~) goodbye4now ')
     GPIO.cleanup()
+    return 
 
 def main():  # TODO: get rid of main() function at somepoint, probably
     

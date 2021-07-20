@@ -113,12 +113,13 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
        
         # wait on futures to finish running 
         attempts = 0
-        for future,name in script.futures: 
+        print("script futures: ", script.futures)
+        while attempts < 5 : 
+            for future,name in script.futures: 
+                print(f'(Future Name) {name} (Running) {future.running()}')
+                time.sleep(3)
             attempts += 1
-            print(f'(Future Name) {name} (Running) {future.running()}')
-            if attempts > 10: break 
-            else: time.sleep(3)
-        
+
         # Reset Stuff before next round starts
         results.event_queue.join() # ensures that all events get written before beginning next round 
          
@@ -137,6 +138,8 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
 
 
 def run(csv_input, output_dir, pin_obj_dict=None): 
+    
+    finalClean = False 
     try: 
  
         key_values = get_key_values()
@@ -150,26 +153,24 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                return 
+                return pin_obj_dict
             elif cont is 'n': 
-                sys.exit(0) # ends program immediately 
+                finalClean = True 
+                sys.exit(0)
             else: 
                 'hmm didnt recognize that input. please only enter y or n'
         
     else: 
         print("Magazine script has finished running all rounds successfully!")
-        # script.cleanup()
-        # TODO: any extra cleanup stuff if needed?? 
+        return pin_obj_dict
+
     finally: 
-        # script.cleanup() # runs cleanup() no matter what reason there was for exiting 
+        # runs cleanup() no matter what reason there was for exiting 
         try: 
-            myPins = script.pins
-            script.cleanup() 
+            script.cleanup(finalClean) 
         except UnboundLocalError: 
             traceback.print_tb
             print('~~ Unbound Local Error Caught: got stuck during setup; script never completed setup ~~')
-        finally: 
-            return myPins 
 
 
     

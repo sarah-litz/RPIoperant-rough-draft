@@ -111,12 +111,12 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         
         # wait on futures to finish running 
         attempts = 0
-        while len(script.futures) > 0: 
-            attempts += 1 
+        print("script futures: ", script.futures)
+        while attempts < 5 : 
             for future,name in script.futures: 
-                print(f'(Name) {name} (Running) {future.running()}')
-            if attempts > 5:  break 
-            else: time.sleep(3)
+                print(f'(Future Name) {name} (Running) {future.running()}')
+                time.sleep(3)
+            attempts += 1
         
         # Reset Things before start of next round
         results.event_queue.join() # ensures that all events get written before beginning next round 
@@ -134,8 +134,9 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
 
 
 def run(csv_input, output_dir, pin_obj_dict=None): 
+
+    finalClean = False 
     try: 
- 
         key_values = get_key_values()
         pin_values = get_pin_values()
         script = Script(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
@@ -143,29 +144,28 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         run_script(script) 
         
     except KeyboardInterrupt: 
-        print("  uh oh interrupt! I will clean up and then exit Autoshape.")
+        print(" uh oh interrupt! I will clean up and then exit Autoshape.")
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                return 
+                return pin_obj_dict
             elif cont is 'n': 
-                sys.exit(0) # ends program immediately 
+                finalClean = True 
+                sys.exit(0)
             else: 
                 'hmm didnt recognize that input. please only enter y or n'
         
     else: 
         print("Autoshape script has finished running all rounds successfully!")
-        
+        return pin_obj_dict
+
     finally: 
-        # script.cleanup() # runs cleanup() no matter what reason there was for exiting 
+        # runs cleanup() no matter what reason there was for exiting 
         try: 
-            myPins = script.pins
-            script.cleanup() 
+            script.cleanup(finalClean) 
         except UnboundLocalError: 
             traceback.print_tb
-            print('script never completed setup')
-        finally: 
-            return myPins
+            print('~~ Unbound Local Error Caught: got stuck during setup; script never completed setup ~~')
     
 
 

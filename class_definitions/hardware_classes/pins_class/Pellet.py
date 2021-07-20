@@ -47,7 +47,8 @@ class Pellet(Pin):
         empty_count = 0 # counts number of times that the pin reads the trough as being empty 
         pelletExists_count = 0 # counts the number of times that the pin reads the trough as containing a pellet 
         
-        while time.time() - time_start < 2000: 
+        while time.time() - time_start < 2: 
+            print("TIME: ", time.time() - time_start)
             if self.troughEmpty(): 
                 # nothing is in the trough 
                 empty_count += 1

@@ -199,7 +199,9 @@ class Script():
                     print('all futures were accounted for; finished cleanly')
                     return 
                 else: 
-                    print('some futures were not able to finish')
+                    print('some futures were not able to finish: ')
+                    for future,name in self.futures: 
+                        print(f'(Future Name) {name} (Running) {future.running()}')
                     return 
                            
     def countdown_timer(self, timeinterval, event): 
@@ -269,7 +271,7 @@ class Script():
             self.executor.submit(self.buzz, 'pellet_buzz')
 
          
-    def cleanup(self): 
+    def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
         
@@ -289,9 +291,12 @@ class Script():
         for i in pellet_pins: 
             pellet_pins[i].cleanup()
     
-        # GPIO.cleanup() # cleans up all gpio pins 
+        if finalClean: 
+            print('gpio cleanup done')
+            GPIO.cleanup()
         
         return     
+    
 
         
 
