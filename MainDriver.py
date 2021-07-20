@@ -101,7 +101,7 @@ def startup():
     scriptList = inputdf['script'].copy().tolist() 
     print(scriptList)
     count = 0 # counter to loop thru script list 
-    
+    pin_object_dict = None # variable to pass pin object dictionary from script to script so we dont setup mutliple times 
     # while(len(scriptList) > 0): # need to comment this out for testing so doesn't end up in a endless loop. But will use this while loop instead of the foor loop later on. 
     for x in scriptList:
          
@@ -112,7 +112,7 @@ def startup():
             # check if user wants to run next script  
             if (run_next_check(scriptList[count]) == False ): 
                 print(f'see you l8er')
-                GPIO.cleanup()
+                # GPIO.cleanup()
                 exit()
             else: 
             # load in new script 
@@ -123,7 +123,8 @@ def startup():
     
                 # get current row of dataframe 
                 csv_row = inputdf.loc[count]
-                module.run(csv_row, outputdir)
+                pin_object_dict = module.run(csv_row, outputdir, pin_object_dict)
+
 
         else: 
             print(f'could not locate the following module in the run_scripts folder: {scriptList[count]}' )
@@ -134,8 +135,10 @@ def startup():
             # TODO: check that script is done 
             # if done, then remove from scriptList
             # else, ??? 
-            # when script is finished running, make sure that it gets removed from this list! 
-
+            # when script is finished running, make sure that it gets removed from this list!
+     
+    # All Scripts Done
+    GPIO.cleanup()
 
 def main():  # TODO: get rid of main() function at somepoint, probably
     

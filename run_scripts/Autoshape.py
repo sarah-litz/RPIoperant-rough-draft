@@ -8,6 +8,7 @@
 # Standard Lib Imports 
 import time 
 import sys 
+import traceback 
 
 # Third party imports 
 from collections import OrderedDict
@@ -83,7 +84,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
 
         # extend food lever
         future_extend = script.executor.submit(script.pins['lever_food'].extend_lever) 
-        script.futures.append(future_extend)
+        script.futures.append([future_extend, 'levers out'])
 
         # monitoring for lever press 
         script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
@@ -94,26 +95,26 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         
         # Retract Levers
         future_retract = script.executor.submit(script.pins['lever_food'].retract_lever) 
-        script.futures.append(future_retract)                 
+        script.futures.append([future_retract, 'retracting lever'])                 
         
         time_II_start = time.time() # question: not sure wat this gets used for 
         
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
         future_dispense = script.executor.submit(script.pins['read_pellet'].dispense_pellet)
-        script.futures.append(future_dispense)
+        script.futures.append([future_dispense, 'dispense pellet'])
 
                 
         # ----- TODO: was pellet retrieved?! --------
         future_retrieval = script.executor.submit(script.pins['read_pellet'].pellet_retrieval)
-        script.futures.append(future_retrieval)
+        script.futures.append([future_retrieval, 'pellet retrieval'])
         
         # wait on futures to finish running 
         attempts = 0
         while len(script.futures) > 0: 
             attempts += 1 
-            for f in script.futures: 
-                print(f'(Future) {f} (Running) {f.running()}')
+            for future,name in script.futures: 
+                print(f'(Name) {name} (Running) {future.running()}')
             if attempts > 5:  break 
             else: time.sleep(3)
         
@@ -132,18 +133,17 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
     return True 
 
 
-def run(csv_input, output_dir): 
+def run(csv_input, output_dir, pin_obj_dict=None): 
     try: 
  
         key_values = get_key_values()
         pin_values = get_pin_values()
-        script = Script(csv_input, output_dir, key_values, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Script(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
         # script.print_pin_status()
         run_script(script) 
         
     except KeyboardInterrupt: 
         print("  uh oh interrupt! I will clean up and then exit Autoshape.")
-        script.cleanup() 
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
@@ -154,10 +154,18 @@ def run(csv_input, output_dir):
                 'hmm didnt recognize that input. please only enter y or n'
         
     else: 
-        print("Magazine script has finished running all rounds successfully!")
-        script.cleanup()
-        # TODO: any extra cleanup stuff if needed?? 
+        print("Autoshape script has finished running all rounds successfully!")
         
+    finally: 
+        # script.cleanup() # runs cleanup() no matter what reason there was for exiting 
+        try: 
+            myPins = script.pins
+            script.cleanup() 
+        except UnboundLocalError: 
+            traceback.print_tb
+            print('script never completed setup')
+        finally: 
+            return myPins
     
 
 

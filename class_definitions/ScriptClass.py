@@ -43,7 +43,7 @@ class Script():
            then, for each script, if it needs to add more it can override this parent class with a subclass 
     '''
 
-    def __init__(self, csv_input, output_dir, key_values, pin_values=None):
+    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None):
 
         # input and output files
         self.csv_input = csv_input
@@ -54,7 +54,10 @@ class Script():
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
         
         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
+        if pin_obj_dict is None: 
+            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
+        else: 
+            self.pins = pin_obj_dict # pins were already setup in previous script run
            
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
         self.doors = self.setup_Doors() # returns dictionary for each door. 
@@ -179,9 +182,11 @@ class Script():
             then get its result and write them to event_queue. If it is not, then leave it be and go to the 
             next element. Repeat until the round has finished. 
             ''' 
-            for future in self.futures: 
+            for future,name in (self.futures): 
+                # future, name = self.futures[indx] # read element at indx 
                 if future.done(): 
-                    self.futures.remove(future) # remove this future from the list
+                    self.futures.remove([future,name]) # remove tuple at this index 
+                    # self.futures.remove(future) # remove this future from the list
                     event_name, timestamp, ifEvent = future.result() # get result
                     print(f'Future Result: {self.round}, {event_name}, {timestamp-self.start_time}')
                     self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) 
@@ -269,7 +274,8 @@ class Script():
         print('script cleanup!')
         
         self.stop_threads = True # let
-        self.executor_manager.join() # waits so last loop thru can finish 
+        if self.executor_manager.is_alive(): # if thread is running 
+            self.executor_manager.join() # waits so last loop thru can finish 
         
         for d in self.doors: 
             self.doors[d].cleanup() # shuts doors and shuts off door servos 

@@ -8,6 +8,7 @@
 # Standard Lib Imports 
 import time 
 import sys 
+import traceback 
 
 # Third party imports 
 from collections import OrderedDict
@@ -81,7 +82,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
 
         # extend food lever
         future_extend = script.executor.submit(script.pins['lever_food'].extend_lever) 
-        script.futures.append(future_extend)
+        script.futures.append([future_extend, 'levers out'])
         
         # begin monitoring 
         script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
@@ -96,31 +97,31 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
         future_dispense = script.executor.submit(script.pins['read_pellet'].dispense_pellet)
-        script.futures.append(future_dispense)
+        script.futures.append([future_dispense, 'dispense pellet'])
 
         
         # Retract Levers
         time.sleep(script.key_values['timeIV']) # pause before retracting lever 
         future_retract = script.executor.submit(script.pins['lever_food'].retract_lever) 
-        script.futures.append(future_retract)
+        script.futures.append([future_retract, 'retracting levers'])
         
         
         # ----- TODO: was pellet retrieved?! --------
         future_retrieval = script.executor.submit(script.pins['read_pellet'].pellet_retrieval)
-        script.futures.append(future_retrieval)
+        script.futures.append([future_retrieval, 'pellet retrieval'])
         
+       
         # wait on futures to finish running 
         attempts = 0
-        while len(script.futures) > 0: 
-            attempts += 1 
-            for f in script.futures: 
-                print(f'(Future) {f} (Running) {f.running()}')
-            if attempts > 5:  break 
+        for future,name in script.futures: 
+            attempts += 1
+            print(f'(Future Name) {name} (Running) {future.running()}')
+            if attempts > 10: break 
             else: time.sleep(3)
-            
+        
         # Reset Stuff before next round starts
         results.event_queue.join() # ensures that all events get written before beginning next round 
-
+         
         
         # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
 
@@ -131,22 +132,21 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
     # TODO: analyze and cleanup
     # results.analysis 
     results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
-    script.cleanup()
+    # cleanup runs in finally statement (in the run() function)
     return True 
 
 
-def run(csv_input, output_dir): 
+def run(csv_input, output_dir, pin_obj_dict=None): 
     try: 
  
         key_values = get_key_values()
         pin_values = get_pin_values()
-        script = Script(csv_input, output_dir, key_values, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Script(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
         # script.print_pin_status()
         run_script(script) 
         
     except KeyboardInterrupt: 
         print("  uh oh interrupt! I will clean up and then exit Magazine.")
-        script.cleanup() 
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
@@ -158,10 +158,18 @@ def run(csv_input, output_dir):
         
     else: 
         print("Magazine script has finished running all rounds successfully!")
-        script.cleanup()
+        # script.cleanup()
         # TODO: any extra cleanup stuff if needed?? 
-        
-    
+    finally: 
+        # script.cleanup() # runs cleanup() no matter what reason there was for exiting 
+        try: 
+            myPins = script.pins
+            script.cleanup() 
+        except UnboundLocalError: 
+            traceback.print_tb
+            print('~~ Unbound Local Error Caught: got stuck during setup; script never completed setup ~~')
+        finally: 
+            return myPins 
 
 
     
