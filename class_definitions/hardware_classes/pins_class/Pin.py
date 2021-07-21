@@ -38,6 +38,7 @@ class Pin(): # class for a single pin
         
         self.name = pin_name
         self.number = pin_number
+        # TODO: should only do this gpio_obj setup ONE TIME!! if this has already happened, skip this step 
         self.gpio_obj = self.gpio_setup() # TODO: get rid of obj version 
         self.pi = pigpio.pi()
         self.stop_threads = False # used in continuous monitoring 
@@ -119,6 +120,9 @@ class Pin(): # class for a single pin
             time.sleep(0.025)
 
     
+    def reset(self): # for resetting values between script runs 
+        self.stop_threads = False # used in continuous monitoring 
+        self.event_count = 0 # incremented each time an event is counted. This should get reset each new round. 
     
     def cleanup(): 
         pass 

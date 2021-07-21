@@ -9,6 +9,7 @@
 import time
 import threading
 from queue import Queue
+import logging
 
 # third party imports 
 import RPi.GPIO as GPIO
@@ -114,9 +115,11 @@ class Lever(Pin):
              
             if self.monitoring is False: 
                 if GPIO.event_detected(self.number): 
+                    logging.debug('lever press outside of designated timeframe')
                     self.all_lever_presses.put('lever press outside of designated timeframe', time.time())
                     
             else: 
+                logging.debug('in monitor lever continuous, self.monitoring has been set to True! Waiting to see if there is a lever press. ')
                 print("monitoring was set to True. Waiting to see if there is a lever press... ")
                 event_name, timestamp = self.monitor_lever() 
                 if event_name: self.all_lever_presses.put(event_name, timestamp) # if event, add to queue of all lever presses
@@ -124,8 +127,9 @@ class Lever(Pin):
                 self.monitoring = False # monitoring should never happen for more than 1 iteration in a row, so we set to False. 
 
             time.sleep(0.025)
+        
         GPIO.remove_event_detect(self.number) # This statement will execute during cleanup() 
-
+        logging.debug(f'ending thread to look for events at {self.name}')
         
     def monitor_lever(self): 
         
@@ -150,8 +154,13 @@ class Lever(Pin):
             
             time.sleep(0.025)       
         
-        
-        
+    def reset(self): 
+        self.stop_threads = False # used in continuous monitoring 
+        self.event_count = 0 # incremented each time an event is counted. This should get reset each new round. 
+        self.press_timeout = 0 
+        self.required_presses = 1
+        self.monitoring = False 
+            
     def cleanup(self): 
         self.stop_threads = True # forces threads that are monitoring a lever to complete
             

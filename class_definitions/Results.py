@@ -110,7 +110,7 @@ class Results():
         ana.summary()
         ana.by_round()
         
-        
+    
     ''' Functions to help with Exiting the Program '''          
     def cleanup(self): # finish writing and close file
         with open(self.filepath, 'a') as file: 

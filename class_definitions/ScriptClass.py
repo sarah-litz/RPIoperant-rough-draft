@@ -38,7 +38,7 @@ from class_definitions.hardware_classes.Door import Door # built on top of multi
 eventQ_lock = threading.Lock()
 
 
-class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
+'''class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
     def __init__(self, pin_obj_dict=None, pin_values=None): 
          # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
         if pin_obj_dict is None: 
@@ -51,7 +51,7 @@ class SharedScript(): # objects that get shared among the script instances; This
         self.executor = ThreadPoolExecutor(max_workers=20) 
         self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
         self.futures = []
-        self.stop_threads = False 
+        self.stop_threads = False''' 
         
         
         
@@ -78,6 +78,8 @@ class Script(): # each script that runs gets its own instance of Script created
             self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
         else: 
             self.pins = pin_obj_dict # pins were already setup in previous script run
+            for pin in self.pins: 
+                self.pins[pin].reset() # resets values
         
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
         self.doors = self.setup_Doors() # returns dictionary for each door. 

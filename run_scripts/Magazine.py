@@ -14,7 +14,7 @@ import traceback
 from collections import OrderedDict
 
 # Local imports 
-from class_definitions.ScriptClass import Script, SharedScript # import Script # import the parent class 
+from class_definitions.ScriptClass import Script # import Script # import the parent class 
 
 
 ''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
@@ -153,7 +153,6 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                # return pin_obj_dict
                 return script.pins
             elif cont is 'n': 
                 finalClean = True 
@@ -163,7 +162,6 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         
     else: 
         print("Magazine script has finished running all rounds successfully!")
-        # return pin_obj_dict
         return script.pins
 
     finally: 

@@ -90,6 +90,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
         script.pins['lever_food'].press_timeout = script.key_values['timeII'] # num of seconds vole has to press lever 
         script.pins['lever_food'].monitoring=True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
+        
         time.sleep(script.pins['lever_food'].press_timeout) # pause for monitoring lever press timeframe  
         # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
         
@@ -148,7 +149,6 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                # return pin_obj_dict
                 return script.pins
             elif cont is 'n': 
                 finalClean = True 
@@ -158,7 +158,6 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         
     else: 
         print("Autoshape script has finished running all rounds successfully!")
-        # return pin_obj_dict
         return script.pins
     finally: 
         # runs cleanup() no matter what reason there was for exiting 
