@@ -100,6 +100,8 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         
         time_II_start = time.time() # question: not sure wat this gets used for 
         
+        time.sleep(delay) # do not give reward until after delay
+        
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
         future_dispense = script.executor.submit(script.pins['read_pellet'].dispense_pellet)

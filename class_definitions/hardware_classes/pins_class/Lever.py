@@ -106,10 +106,11 @@ class Lever(Pin):
     
     
     def monitor_lever_continuous(self, callback_func): 
+        # rn, callback function is always script.lever_event_callback
         # purpose is to have a constant monitoring of any presses that occur on the lever. 
         # TODO/QUESTION: i am unclear on what I should be doing with this collected information?? so for now I am just gonna let it sit in a queue 
         GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=500)
-        print(f'background thread running to look for events at {self.name}')
+        print(f'starting background thread running to look for events at {self.name}')
         
         while self.stop_threads is False: 
              
@@ -119,8 +120,7 @@ class Lever(Pin):
                     self.all_lever_presses.put('lever press outside of designated timeframe', time.time())
                     
             else: 
-                logging.debug('in monitor lever continuous, self.monitoring has been set to True! Waiting to see if there is a lever press. ')
-                print("monitoring was set to True. Waiting to see if there is a lever press... ")
+                logging.debug(f'{self.name} monitoring was set to True. Waiting to see if there is a lever press...')
                 event_name, timestamp = self.monitor_lever() 
                 if event_name: self.all_lever_presses.put(event_name, timestamp) # if event, add to queue of all lever presses
                 callback_func(self.name, event_name, timestamp) # Callback function (lever_event_callback in ScriptClass.py)
@@ -133,7 +133,7 @@ class Lever(Pin):
         
     def monitor_lever(self): 
         
-        print(f'waiting for an event at {self.name}')
+        logging.debug(f'monitor_lever called, now in designated timeframe of waiting for {self.required_presses} presses at {self.name}')
         start = time.time()
         presses=0
 

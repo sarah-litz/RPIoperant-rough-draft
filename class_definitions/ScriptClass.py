@@ -77,7 +77,8 @@ class Script(): # each script that runs gets its own instance of Script created
         if pin_obj_dict is None: 
             self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
         else: 
-            self.pins = pin_obj_dict # pins were already setup in previous script run
+            # pins were already setup in previous script run
+            self.pins = pin_obj_dict # set to pin dict that is already setup 
             for pin in self.pins: 
                 self.pins[pin].reset() # resets values
         
