@@ -14,6 +14,9 @@ from pathlib import Path
 from queue import Queue, Empty
 import threading
 import socket
+import logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='(%(threadName)-9s) %(message)s',)
 
 # Local Imports 
 from class_definitions.AnalyzeResults import Analysis
@@ -98,6 +101,7 @@ class Results():
             # logging.debug('i am monitoring the event queue mmkay')
             self.record_event(event) # function that writes to the output file 
             self.event_queue.task_done()
+            
     
                 
     ''' Data Analysis Functions ''' 

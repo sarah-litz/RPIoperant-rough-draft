@@ -148,7 +148,8 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                return pin_obj_dict
+                # return pin_obj_dict
+                return script.pins
             elif cont is 'n': 
                 finalClean = True 
                 sys.exit(0)
@@ -157,8 +158,8 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         
     else: 
         print("Autoshape script has finished running all rounds successfully!")
-        return pin_obj_dict
-
+        # return pin_obj_dict
+        return script.pins
     finally: 
         # runs cleanup() no matter what reason there was for exiting 
         try: 

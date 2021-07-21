@@ -9,6 +9,7 @@ import pandas as pd
 import importlib
 import sys, traceback, time, os  
 
+
 import RPi.GPIO as GPIO
 
 
@@ -93,7 +94,6 @@ def startup():
     
     inputdf = pd.read_csv(inputfp) 
     print(inputdf)
-
 
     ''' -------- LOAD IN MODULE OF NXT SCRIPT TO RUN ----------- ''' 
     # looping through all the scripts that the user wants to have run

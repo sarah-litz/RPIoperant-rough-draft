@@ -16,6 +16,9 @@ import sys
 from tabulate import tabulate
 import threading 
 from queue import Queue, Empty
+import logging
+logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-9s) %(message)s',)
+# logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)6d %(threadName)s %(message)s')
 
 
 # Third Party Imports
@@ -35,8 +38,25 @@ from class_definitions.hardware_classes.Door import Door # built on top of multi
 eventQ_lock = threading.Lock()
 
 
- 
-class Script(): 
+class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
+    def __init__(self, pin_obj_dict=None, pin_values=None): 
+         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
+        if pin_obj_dict is None: 
+            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
+        else: 
+            self.pins = pin_obj_dict # pins were already setup in previous script run
+            
+            
+        # Thread Pool 
+        self.executor = ThreadPoolExecutor(max_workers=20) 
+        self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
+        self.futures = []
+        self.stop_threads = False 
+        
+        
+        
+
+class Script(): # each script that runs gets its own instance of Script created 
     ''' 
         class Script: 
            meant for holding the information that all of the scripts have in common. 
@@ -58,7 +78,7 @@ class Script():
             self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
         else: 
             self.pins = pin_obj_dict # pins were already setup in previous script run
-           
+        
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
         self.doors = self.setup_Doors() # returns dictionary for each door. 
         
@@ -196,12 +216,12 @@ class Script():
             
             if self.stop_threads is True: 
                 if len(self.futures) == 0: 
-                    print('all futures were accounted for; finished cleanly')
+                    logging.debug('all futures were accounted for; finished cleanly')
                     return 
                 else: 
-                    print('some futures were not able to finish: ')
+                    logging.debug('some futures were not able to finish: ')
                     for future,name in self.futures: 
-                        print(f'(Future Name) {name} (Running) {future.running()}')
+                        logging.debug(f'(Future Name) {name} (Running) {future.running()}')
                     return 
                            
     def countdown_timer(self, timeinterval, event): 
@@ -277,6 +297,7 @@ class Script():
         
         self.stop_threads = True # let
         if self.executor_manager.is_alive(): # if thread is running 
+            logging.debug('waiting for executor manager to finish its final loop thru the executor threads (ScriptClass.py)')
             self.executor_manager.join() # waits so last loop thru can finish 
         
         for d in self.doors: 
