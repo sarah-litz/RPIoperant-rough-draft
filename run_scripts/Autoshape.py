@@ -87,11 +87,14 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         script.futures.append([future_extend, 'levers out'])
 
         # monitoring for lever press 
-        script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
-        script.pins['lever_food'].press_timeout = script.key_values['timeII'] # num of seconds vole has to press lever 
-        script.pins['lever_food'].monitoring=True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
+        script.pins['lever_food'].monitor_lever(press_timeout=script.key_values['timeII'],  # change back to 'timeII' press timeout value 
+                                                required_presses=1,
+                                                callbacks = [
+                                                    lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
+                                                    lambda sound='pellet_buzz': script.buzz
+                                                ])
         
-        time.sleep(script.pins['lever_food'].press_timeout) # pause for monitoring lever press timeframe  
+        time.sleep(script.key_values['timeII']) # pause for monitoring lever press timeframe  
         # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
         
         # Retract Levers

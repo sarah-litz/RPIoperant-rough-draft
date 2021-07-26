@@ -194,7 +194,7 @@ class Script(): # each script that runs gets its own instance of Script created
                 self.print_pin_status()
                 time.sleep(0.05)
         except KeyboardInterrupt:
-            print('\n\bye!')
+            print('\n bye!')
             exit()
                 
     
@@ -284,12 +284,10 @@ class Script(): # each script that runs gets its own instance of Script created
         #              (2) event_name and timestamp contains the information we want to write to output file 
                    
         if event_name: 
-            print(f'{event_name} occurred for {object}!')
-            self.executor.submit(self.pulse_sync_line, self.round, length=0.25) # Pulse for Event: Lever Press 
-            self.executor.submit(self.buzz, 'pellet_buzz') # play sound for lever press  
+            print(f'{event_name} recorded!')
             self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) # record event in event queue
         else: 
-            print(f'{event_name} timed out. No press detected for {object}.')
+            print(f'{event_name} timed out. No press recorded for {object}.')
             # TODO/QUESTION: should i write 'no press detected' to output file? 
             self.executor.submit(self.buzz, 'pellet_buzz')
 
@@ -297,7 +295,7 @@ class Script(): # each script that runs gets its own instance of Script created
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
-        
+
         self.stop_threads = True # let
         if self.executor_manager.is_alive(): # if thread is running 
             logging.debug('waiting for executor manager to finish its final loop thru the executor threads (ScriptClass.py)')

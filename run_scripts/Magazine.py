@@ -47,6 +47,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         results.event_queue.put([script.round, event_name, timestamp-script.start_time]) # record event in event queue'''
     ''' ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ '''
     
+    
     results = script.results # make results instanceto give output data so it's recorded&analyzed 
     
     results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
@@ -55,9 +56,11 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
     # make sure all doors are closed
     doors = ['door_1', 'door_2']
     for d in doors:
-        if script.doors[d].isOpen() is True:  
+        print(f'Door State of {d} - isOpen() =', script.doors[d].isOpen())
+        print(f'Current Throttle speed of {d} is: {script.doors[d].servo_door.throttle}')
+        if script.doors[d].isOpen():  
             script.doors[d].close_door() 
-       
+    
     levers = ['lever_food', 'lever_door_1', 'lever_door_2']
     for l in levers: # create thread for fulltime monitoring of each lever
         script.executor.submit(script.pins[l].monitor_lever_continuous, callback_func=script.lever_event_callback)
@@ -85,12 +88,18 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         script.futures.append([future_extend, 'levers out'])
         
         # begin monitoring 
-        script.pins['lever_food'].required_presses = 1 # set the number of presses that vole must perform to trigger reward
-        script.pins['lever_food'].press_timeout = script.key_values['timeII'] # num of seconds vole has to press lever 
-        script.pins['lever_food'].monitoring=True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
-        
-                 
-        time.sleep(script.pins['lever_food'].press_timeout) # pause while we are waiting on lever press 
+        # script.pins['lever_food'].monitor_lever(required_presses=1, press_timeout=script.key_values['timeII'])
+        script.pins['lever_food'].monitor_lever(press_timeout=script.key_values['timeII'],  # change back to 'timeII' press timeout value 
+                                                required_presses=1,
+                                                callbacks = [
+                                                    lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
+                                                    lambda sound='pellet_buzz': script.buzz
+                                                ])
+
+
+
+
+        time.sleep(script.key_values['timeII']) # pause while we are waiting on lever press 
         
         time_II_start = time.time() # question: not sure wat this gets used for 
    
@@ -145,6 +154,7 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         key_values = get_key_values()
         pin_values = get_pin_values()
         script = Script(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        
         # script.print_pin_status()
         run_script(script) 
         
@@ -166,6 +176,7 @@ def run(csv_input, output_dir, pin_obj_dict=None):
 
     finally: 
         # runs cleanup() no matter what reason there was for exiting 
+
         try: 
             script.cleanup(finalClean) 
         except UnboundLocalError: 

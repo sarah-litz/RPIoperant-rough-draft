@@ -73,7 +73,7 @@ class Pellet(Pin):
     def dispense_pellet(self): 
         
         if not self.troughEmpty(): # there is already a pellet, do not dispense
-            return 'skipped pellet dispense', time.time(), False   
+            return 'pellet already in trough; skipped dispense', time.time(), False   
         else: # dispense pellet 
             
            # QUESTION: confused on some aspects of the original dispense_pellet function that is written. 
@@ -82,7 +82,7 @@ class Pellet(Pin):
             self.servo_pellet.throttle = self.continuous_servo_speeds['fwd'] # start moving servo 
             print('SERVO SPEED FOR THE PELLET IS: ', self.continuous_servo_speeds['fwd'])
             event_bool, event_timestamp = self.detect_event(timeout=3, edge=GPIO.FALLING) 
-            self.continuous_servo_speeds['stop']
+            self.servo_pellet.throttle = self.continuous_servo_speeds['stop'] # stop moving servo 
             if event_bool: 
                 # a pellet was dispensed  
                 return 'pellet dispensed', event_timestamp, event_bool 

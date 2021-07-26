@@ -203,8 +203,8 @@ class Door():
     def cleanup(self): 
         # QUESTION: should we ensure doors are open and/or closed when we finish?? 
         # kill threads 
-        ''' if self.isOpen(): 
-            self.close_door() '''
+        if self.isOpen(): 
+            self.close_door() 
         self.stop_threads = True 
         GPIO.remove_event_detect(self.override_open_switch.number)
         GPIO.remove_event_detect(self.override_close_switch.number)
