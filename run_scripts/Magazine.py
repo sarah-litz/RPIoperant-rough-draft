@@ -93,7 +93,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
                                                 required_presses=1,
                                                 callbacks = [
                                                     lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
-                                                    lambda sound='pellet_buzz': script.buzz
+                                                    lambda: script.buzz(buzz_type='pellet_buzz')
                                                 ])
 
 

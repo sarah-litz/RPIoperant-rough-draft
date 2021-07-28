@@ -240,6 +240,7 @@ class Script(): # each script that runs gets its own instance of Script created
         # calls the function pulse_sync_line defined in the Pin class. 
         # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
         # write to results 
+        print("P U L S E")
         self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         self.pins['gpio_sync'].pulse_sync_line(length)
         return 
@@ -247,6 +248,7 @@ class Script(): # each script that runs gets its own instance of Script created
     def buzz(self, buzz_type): 
         # play sound function 
         # set values for buzz length, hz, and name
+        print("B U Z Z")
         if buzz_type is 'round_buzz': 
             buzz_len =   self.key_values['round_start_tone_time']
             hz =  self.key_values['round_start_tone_hz']
@@ -289,7 +291,7 @@ class Script(): # each script that runs gets its own instance of Script created
         else: 
             print(f'{event_name} timed out. No press recorded for {object}.')
             # TODO/QUESTION: should i write 'no press detected' to output file? 
-            self.executor.submit(self.buzz, 'pellet_buzz')
+            # self.executor.submit(self.buzz, 'pellet_buzz')
 
          
     def cleanup(self, finalClean = False): 
