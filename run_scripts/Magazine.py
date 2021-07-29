@@ -78,14 +78,15 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         # ~~ New Round ~~ 
         script.round = count+1
         print("round #",script.round)
+
+        # pulse 
+        script.thread_pool_submit('new round', script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round
         
-        script.executor.submit(script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round 
-        results.event_queue.put([script.round, 'new round', time.time()-script.start_time]) # add to timestamp_queue aka event_queue 
         script.executor.submit(script.buzz, 'round_buzz') # play sound for round start (type: 'round_buzz')
 
         # extend food lever
-        future_extend = script.executor.submit(script.pins['lever_food'].extend_lever) 
-        script.futures.append([future_extend, 'levers out'])
+        script.thread_pool_submit('levers out', script.pins['lever_food'].extend_lever)
+
         
         # begin monitoring 
         # script.pins['lever_food'].monitor_lever(required_presses=1, press_timeout=script.key_values['timeII'])
@@ -105,19 +106,19 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
    
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
-        future_dispense = script.executor.submit(script.pins['read_pellet'].dispense_pellet)
-        script.futures.append([future_dispense, 'dispense pellet'])
+        script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
+
 
         
         # Retract Levers
         time.sleep(script.key_values['timeIV']) # pause before retracting lever 
-        future_retract = script.executor.submit(script.pins['lever_food'].retract_lever) 
-        script.futures.append([future_retract, 'retracting levers'])
+        script.thread_pool_submit('retracting lever', script.pins['lever_food'].retract_lever)      
+
         
         
         # ----- TODO: was pellet retrieved?! --------
-        future_retrieval = script.executor.submit(script.pins['read_pellet'].pellet_retrieval)
-        script.futures.append([future_retrieval, 'pellet retrieval'])
+        script.thread_pool_submit('pellet retrieval', script.pins['read_pellet'].pellet_retrieval)
+
         
        
         # wait on futures to finish running 

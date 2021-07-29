@@ -67,6 +67,7 @@ class Pellet(Pin):
             else: 
                 time.sleep(0.025)
 
+        print("troughEmpty:", self.troughEmpty())
         return 'pellet not retrieved', time.time(), False
           
         

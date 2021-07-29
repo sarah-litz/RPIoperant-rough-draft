@@ -17,13 +17,22 @@ from collections import OrderedDict
 from class_definitions.ScriptClass import Script # import Script # import the parent class 
 
 
+# ------------------------------------------------------------------------------------
+# Autoshape Time Intervals (In Seconds)
+# Change these values to adjust the timing of experiment! 
+
+# round_time = 90 # round_time: experiment will complete after exactly 90 seconds 
+
+# wait (?) seconds before extending the lever 
+# wait_before_lever_extension = 
+
+# wait (?) seconds to see if the lever gets pressed 
+# lever_press_timeout = 
+# ------------------------------------------------------------------------------------
+
+
 ''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
       #  Defined Here: values for pins and key values 
-        
-def get_pin_values():  # TODO: possibly delete this function
-    ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
-    pins={}
-    return pins 
 
 def get_key_values(): 
     ''' DEFAULT KEY VALUES DEFINED HERE '''
@@ -35,12 +44,16 @@ def get_key_values():
                                         ('delay by day', [0,0,1,1,2]), ('delay default', 2)
                                     ]) 
 
+def get_pin_values():  # TODO: possibly delete this function
+    ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
+    pins={}
+    return pins 
 
         
 '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
 def run_script(script):  # csv_input is the row that corresponds with the current script getting run 
     
-    results = script.results # make results instanceto give output data so it's recorded&analyzed 
+    results = script.results # make results instance to give output data so it's recorded&analyzed 
     
     results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
     script.executor_manager.start() 
@@ -78,13 +91,14 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         script.round = count+1
         print("round #",script.round)
         
-        script.executor.submit(script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round 
-        results.event_queue.put([script.round, 'new round', time.time()-script.start_time]) # add to timestamp_queue aka event_queue 
-        script.executor.submit(script.buzz, 'round_buzz') # play sound for round start (type: 'round_buzz')
+        # pulse 
+        script.thread_pool_submit('new round', script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round
+
+        # buzz
+        script.executor.submit(script.buzz, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
 
         # extend food lever
-        future_extend = script.executor.submit(script.pins['lever_food'].extend_lever) 
-        script.futures.append([future_extend, 'levers out'])
+        script.thread_pool_submit('levers out', script.pins['lever_food'].extend_lever)
 
         # monitoring for lever press 
         script.pins['lever_food'].monitor_lever(press_timeout=script.key_values['timeII'],  # change back to 'timeII' press timeout value 
@@ -98,8 +112,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
         
         # Retract Levers
-        future_retract = script.executor.submit(script.pins['lever_food'].retract_lever) 
-        script.futures.append([future_retract, 'retracting lever'])                 
+        script.thread_pool_submit('retracting lever', script.pins['lever_food'].retract_lever)      
         
         time_II_start = time.time() # question: not sure wat this gets used for 
         
@@ -107,13 +120,11 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         
         # Dispense Pellet in response to Lever Press
         print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
-        future_dispense = script.executor.submit(script.pins['read_pellet'].dispense_pellet)
-        script.futures.append([future_dispense, 'dispense pellet'])
+        script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
 
                 
         # ----- TODO: was pellet retrieved?! --------
-        future_retrieval = script.executor.submit(script.pins['read_pellet'].pellet_retrieval)
-        script.futures.append([future_retrieval, 'pellet retrieval'])
+        script.thread_pool_submit('pellet retrieval', script.pins['read_pellet'].pellet_retrieval)
         
         # wait on futures to finish running 
         attempts = 0

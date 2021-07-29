@@ -73,7 +73,7 @@ class Analysis():
             
             else: 
                 # there was no lever press in this round 
-                lever_in = leverdf.loc[leverdf['Event'].str.contains("retracted")]
+                lever_in = leverdf.loc[leverdf['Event'].str.contains("retract")]
                 timeII = float(lever_in['Time'])
                 print("No Lever Press. Lever Retracted: ",timeII)
             

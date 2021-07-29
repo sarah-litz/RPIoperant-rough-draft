@@ -157,9 +157,13 @@ class Script(): # each script that runs gets its own instance of Script created
             pins_of_door_id = self.get_pins_of_type(f'door_{i}')
         return door_dict
     
-        
+
+   
     ''' ------------- Public Methods ------------------------'''
 
+    # # # # # # # # # # # # # # # # # # # # 
+    #           Pin Functions             #
+    # # # # # # # # # # # # # # # # # # # # 
     def get_pins_of_type(self, type): 
         # returns pins of the specified type 
         pin_dict = {}
@@ -197,7 +201,13 @@ class Script(): # each script that runs gets its own instance of Script created
             print('\n bye!')
             exit()
                 
-    
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    #       Functions for managing/monitoring the Thread Pool and its resulting Futures                     #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    def thread_pool_submit(self, event_name, func, *args, **kwargs): 
+        future = self.executor.submit(func, *args, **kwargs)   
+        self.futures.append([future, event_name]) # adds to list of futures to ensure it gets written to output once it finishes 
+
     def monitor_for_future_results(self): 
         # separate thread 
         while True: 
@@ -206,7 +216,6 @@ class Script(): # each script that runs gets its own instance of Script created
             next element. Repeat until the round has finished. 
             ''' 
             for future,name in (self.futures): 
-                # future, name = self.futures[indx] # read element at indx 
                 if future.done(): 
                     self.futures.remove([future,name]) # remove tuple at this index 
                     # self.futures.remove(future) # remove this future from the list
@@ -226,7 +235,12 @@ class Script(): # each script that runs gets its own instance of Script created
                     for future,name in self.futures: 
                         logging.debug(f'(Future Name) {name} (Running) {future.running()}')
                     return 
-                           
+
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #  functions for tracking & signaling event occurrences   #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+                       
     def countdown_timer(self, timeinterval, event): 
         print("\r")
         while timeinterval:
@@ -243,7 +257,7 @@ class Script(): # each script that runs gets its own instance of Script created
         print("P U L S E")
         self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         self.pins['gpio_sync'].pulse_sync_line(length)
-        return 
+        return 'pulse', time.time(), True
 
     def buzz(self, buzz_type): 
         # play sound function 
@@ -293,7 +307,12 @@ class Script(): # each script that runs gets its own instance of Script created
             # TODO/QUESTION: should i write 'no press detected' to output file? 
             # self.executor.submit(self.buzz, 'pellet_buzz')
 
-         
+
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #               cleanup function                  #
+    # # # # # # # # # # # # # # # # # # # # # # # # # #  
+
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
