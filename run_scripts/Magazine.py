@@ -17,6 +17,37 @@ from collections import OrderedDict
 from class_definitions.ScriptClass import Script # import Script # import the parent class 
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+#                                                                                             #
+#                            Experiment Variables                                             #
+#                   ( change these values, do not change variable names)                      #       
+#                                                                                             #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+
+
+onPressEvents = [
+    'script.pulse_sync_line(length=0.25)', 
+    "script.buzz(buzz_type='pellet_buzz')",
+    'time.sleep(1)', 
+    'script.dispense_pellet()', 
+    'time.sleep(1)',         
+    "script.pins['lever_food'].retract_lever()", 
+]
+
+noPressEvents = [
+    'script.pulse_sync_line(length=0.25)', 
+    "script.buzz(buzz_type='pellet_buzz')", 
+    'time.sleep(1)', 
+    'script.dispense_pellet()', 
+    'time.sleep(1)',         
+    "script.pins['lever_food'].retract_lever()", 
+]
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+
 ''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
       #  Defined Here: values for pins and key values 
         
@@ -39,20 +70,14 @@ def get_key_values():
 '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
 def run_script(script):  # csv_input is the row that corresponds with the current script getting run 
 
-    ''' ~ ~ ~ callback function for what we want to happen when there is a lever press detected ~ ~ ~ '''
-    '''def lever_event_callback(event_name, timestamp): 
-        print(f'{event_name} occurred: callback function exeucting now.')
-        script.executor.submit(script.pulse_sync_line, script.round, length=0.25) # Pulse for Event: Lever Press 
-        script.executor.submit(script.buzz, 'pellet_buzz') # play sound for lever press  
-        results.event_queue.put([script.round, event_name, timestamp-script.start_time]) # record event in event queue'''
-    ''' ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ '''
-    
-    
+
     results = script.results # make results instanceto give output data so it's recorded&analyzed 
     
     results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
     script.executor_manager.start() # start up thread that handles the results that (executor) future objects produce 
     
+    #CHANGE1: call to new function: configure callback events 
+    script.configure_callback_events(onPressEvents, noPressEvents) # set events in case of lever press (or no lever press)
     # make sure all doors are closed
     doors = ['door_1', 'door_2']
     for d in doors:
@@ -63,10 +88,11 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
     
     levers = ['lever_food', 'lever_door_1', 'lever_door_2']
     for l in levers: # create thread for fulltime monitoring of each lever
-        script.executor.submit(script.pins[l].monitor_lever_continuous, callback_func=script.lever_event_callback)
-    
+        script.pins[l].onPressEvents = script.onPressEvents
+        script.pins[l].noPressEvents = script.noPressEvents
+        script.executor.submit(script.pins[l].monitor_lever_continuous, script.onPressEvents, script.noPressEvents, callback_func=script.lever_event_callback)
 
-    script.executor.submit(script.pulse_sync_line, script.round, length=0.5) # Pulse Event: Experiment Start 
+    script.executor.submit(script.pulse_sync_line, length=0.5, round=script.round) # Pulse Event: Experiment Start 
        
     '''________________________________________________________________________________________________________________________________________'''
     
@@ -80,7 +106,7 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         print("round #",script.round)
 
         # pulse 
-        script.thread_pool_submit('new round', script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round
+        script.thread_pool_submit('new round', script.pulse_sync_line, length=0.1, round=script.round) # Pulse Event: New Round
         
         script.executor.submit(script.buzz, 'round_buzz') # play sound for round start (type: 'round_buzz')
 
@@ -91,11 +117,12 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         # begin monitoring 
         # script.pins['lever_food'].monitor_lever(required_presses=1, press_timeout=script.key_values['timeII'])
         script.pins['lever_food'].monitor_lever(press_timeout=script.key_values['timeII'],  # change back to 'timeII' press timeout value 
-                                                required_presses=1,
+                                                required_presses=1) 
+        ''', 
                                                 callbacks = [
                                                     lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
                                                     lambda: script.buzz(buzz_type='pellet_buzz')
-                                                ])
+                                                ])'''
 
 
 
@@ -105,8 +132,8 @@ def run_script(script):  # csv_input is the row that corresponds with the curren
         time_II_start = time.time() # question: not sure wat this gets used for 
    
         # Dispense Pellet in response to Lever Press
-        print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
-        script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
+        # print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
+        # script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
 
 
         

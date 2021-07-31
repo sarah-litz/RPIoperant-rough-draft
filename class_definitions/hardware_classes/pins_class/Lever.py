@@ -6,10 +6,12 @@
 #!/usr/bin/python3
 
 # standard lib imports 
+import traceback
 import time
 import threading
 from queue import Queue
 import logging
+import inspect
 
 # third party imports 
 import RPi.GPIO as GPIO
@@ -43,7 +45,8 @@ class Lever(Pin):
         self.press_timeout = 0 
         self.required_presses = 1
         self.monitoring = False 
-        self.onPress_callbacks = [] # list of functions to call if lever press detected
+        self.onPressEvents = [] # list of functions to call if lever press detected
+        self.noPressEvents = []
         
     ''' ------------- Private Methods -------------- '''
     def set_lever_angle(self):     
@@ -107,17 +110,27 @@ class Lever(Pin):
     
 
 
+
+
     def monitor_lever(self, press_timeout, required_presses=1, callbacks=[]): 
         # sets required attributes and signals monitor_lever_continuous to call monitor_lever_timeframe 
         self.required_presses = required_presses # set the number of presses that vole must perform to trigger reward
         self.press_timeout = press_timeout # num of seconds vole has to press lever 
         self.monitoring = True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
-        print("CALLBACKS ARE:", callbacks)
-        for fun in callbacks: 
-            self.onPress_callbacks.append(fun)
+        
+        if not callbacks: 
+            # callback list is empty
+            # use the globally defined one 
+            # goal is to eventually have this so self.onPressEvents is initialized to these global funciton
+            print("ONPRESS callbacks set in lever.py: ", self.onPressEvents)
+            print("NOPRESS callbacks set in lever.py: ", self.noPressEvents)
+        else: 
+            print("CALLBACKS PASSED IN ARE:", callbacks)
+            for fun in callbacks: 
+                self.onPressEvents.append(fun)
        
 
-    def monitor_lever_continuous(self, callback_func): 
+    def monitor_lever_continuous(self, onPressEvents, noPressEvents, callback_func): 
         # rn, callback function is always script.lever_event_callback
         # purpose is to have a constant monitoring of any presses that occur on the lever. 
         # TODO/QUESTION: i am unclear on what I should be doing with this collected information?? so for now I am just gonna let it sit in a queue 
@@ -137,12 +150,15 @@ class Lever(Pin):
                 if event_name: 
                     self.all_lever_presses.put(event_name, timestamp) # if event, add to queue of all lever presses
                     
-                    # for i in range(len(self.onPress_callbacks)): 
-                        # func = self.onPress_callbacks[i]
-                    for func in self.onPress_callbacks: 
-                        logging.debug(f"Callback Function: {func}")
-                        func()
-                    self.onPress_callbacks.clear() # reset to empty list of callbacks since these should only happen once. 
+                    for func in onPressEvents: 
+                        print(f"CALLING A CALLBACK FUNC: {func}")
+                        try: func()
+                        except (NameError): 
+                            print(f"Name of func ({func}) not recognized")
+                        except (TypeError): 
+                            print("type error")
+                    
+                    self.onPressEvents.clear() # reset to empty list of callbacks since these should only happen once. 
                 
                 callback_func(self.name, event_name, timestamp) # Callback function (lever_event_callback in ScriptClass.py)
                 
@@ -186,7 +202,7 @@ class Lever(Pin):
         self.press_timeout = 0 
         self.required_presses = 1
         self.monitoring = False
-        self.onPress_callbacks.clear()
+        self.onPressEvents.clear()
 
             
     def cleanup(self): 
