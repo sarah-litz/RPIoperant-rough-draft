@@ -49,105 +49,134 @@ def get_pin_values():  # TODO: possibly delete this function
     pins={}
     return pins 
 
-        
-'''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
-def run_script(script):  # csv_input is the row that corresponds with the current script getting run 
-    
-    results = script.results # make results instance to give output data so it's recorded&analyzed 
-    
-    results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
-    script.executor_manager.start() 
-    
-    # delay experiment? 
-    day_num = 'day' in results.header
-    # day_num = int(results.header['day'])
-    if day_num > len(script.key_values['delay by day']):
-        delay = script.key_values['delay default']
-    else:
-        delay = script.key_values['delay by day'][day_num-1] 
-        
-    # make sure all doors are closed
-    doors = ['door_1', 'door_2']
-    for d in doors:
-        if script.doors[d].isOpen() is True:  
-            script.doors[d].close_door() 
-    
-   # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
-    levers = ['lever_food', 'lever_door_1', 'lever_door_2']
-    for l in levers: # create thread for fulltime monitoring of each lever
-        script.executor.submit(script.pins[l].monitor_lever_continuous, callback_func=script.lever_event_callback)
-    
-
-    script.executor.submit(script.pulse_sync_line, script.round, length=0.5) # Pulse Event: Experiment Start 
-       
-    '''________________________________________________________________________________________________________________________________________'''
-    
-    print(f"range for looping: {[i for i in range(1, script.key_values['num_rounds']+1,1)]}")
-    
-    print(f"setup finished, starting experiment with these key values: \n {script.key_values}: \n")
-    for count in range(0, int(script.key_values['num_rounds'])): 
-
-        # ~~ New Round ~~ 
-        script.round = count+1
-        print("round #",script.round)
-        
-        # pulse 
-        script.thread_pool_submit('new round', script.pulse_sync_line, script.round, length=0.1) # Pulse Event: New Round
-
-        # buzz
-        script.executor.submit(script.buzz, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
-
-        # extend food lever
-        script.thread_pool_submit('levers out', script.pins['lever_food'].extend_lever)
-
-        # monitoring for lever press 
-        script.pins['lever_food'].monitor_lever(press_timeout=script.key_values['timeII'],  # change back to 'timeII' press timeout value 
-                                                required_presses=1,
-                                                callbacks = [
-                                                    lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
-                                                    lambda: script.buzz(buzz_type='pellet_buzz')
-                                                ])
-        
-        time.sleep(script.key_values['timeII']) # pause for monitoring lever press timeframe  
-        # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
-        
-        # Retract Levers
-        script.thread_pool_submit('retracting lever', script.pins['lever_food'].retract_lever)      
-        
-        time_II_start = time.time() # question: not sure wat this gets used for 
-        
-        time.sleep(delay) # do not give reward until after delay
-        
-        # Dispense Pellet in response to Lever Press
-        print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
-        script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
-
-                
-        # ----- TODO: was pellet retrieved?! --------
-        script.thread_pool_submit('pellet retrieval', script.pins['read_pellet'].pellet_retrieval)
-        
-        # wait on futures to finish running 
-        attempts = 0
-        print("script futures: ", script.futures)
-        while attempts < 5 : 
-            for future,name in script.futures: 
-                print(f'(Future Name) {name} (Running) {future.running()}')
-                time.sleep(3)
-            attempts += 1
-        
-        # Reset Things before start of next round
-        results.event_queue.join() # ensures that all events get written before beginning next round 
+class Autoshape(Script):    
+    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
+        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
 
         
-        # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
-        results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
-       
-        script.countdown_timer(script.key_values['round_time'], event='next round')  # countdown until the start of the next round
-    
-    # TODO: analyze and cleanup
-    # results.analysis 
-    
-    return True 
+        # # # # # # # # # # # # # # # # # # # # #
+        #        Experiment Variables           #
+        #   change these vals to change order   #
+        #      and timing of experiment         # 
+        # # # # # # # # # # # # # # # # # # # # #
+        self.onPressEvents = [
+            lambda: self.pulse_sync_line(length=0.25), 
+            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: time.sleep(1), 
+            lambda: self.dispense_pellet(), 
+            lambda: time.sleep(1),         
+            lambda: self.pins['lever_food'].retract_lever(), 
+        ]
+
+        self.noPressEvents = [
+            lambda: self.pulse_sync_line(length=0.25), 
+            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: time.sleep(1), 
+            lambda: self.dispense_pellet(), 
+            lambda: time.sleep(1),         
+            lambda: self.pins['lever_food'].retract_lever(), 
+        ]
+
+
+    '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
+    def run_script(self):  # csv_input is the row that corresponds with the current script getting run 
+        
+        results = self.results # make results instance to give output data so it's recorded&analyzed 
+        
+        results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
+        self.executor_manager.start() 
+        
+        # delay experiment? 
+        day_num = 'day' in results.header
+        # day_num = int(results.header['day'])
+        if day_num > len(self.key_values['delay by day']):
+            delay = self.key_values['delay default']
+        else:
+            delay = self.key_values['delay by day'][day_num-1] 
+            
+        # make sure all doors are closed
+        doors = ['door_1', 'door_2']
+        for d in doors:
+            if self.doors[d].isOpen() is True:  
+                self.doors[d].close_door() 
+        
+    # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
+        levers = ['lever_food', 'lever_door_1', 'lever_door_2']
+        for l in levers: # create thread for fulltime monitoring of each lever
+            self.pins[l].onPressEvents = self.onPressEvents
+            self.pins[l].noPressEvents = self.noPressEvents
+            self.executor.submit(self.pins[l].monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func=self.lever_event_callback)
+        
+
+        self.executor.submit(self.pulse_sync_line, length=0.5, round = self.round) # Pulse Event: Experiment Start 
+        
+        '''________________________________________________________________________________________________________________________________________'''
+        
+        print(f"range for looping: {[i for i in range(1, self.key_values['num_rounds']+1,1)]}")
+        
+        print(f"setup finished, starting experiment with these key values: \n {self.key_values}: \n")
+        for count in range(0, int(self.key_values['num_rounds'])): 
+
+            # ~~ New Round ~~ 
+            self.round = count+1
+            print("round #",self.round)
+            
+            # pulse 
+            self.thread_pool_submit('new round', self.pulse_sync_line, length=0.1, round = self.round) # Pulse Event: New Round
+
+            # buzz
+            self.executor.submit(self.buzz, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
+
+            # extend food lever
+            self.thread_pool_submit('levers out', self.pins['lever_food'].extend_lever)
+
+            # monitoring for lever press 
+            self.pins['lever_food'].monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
+            ''',                                        callbacks = [
+                                                        lambda: self.pulse_sync_line(round=self.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
+                                                        lambda: self.buzz(buzz_type='pellet_buzz')
+                                                    ])'''
+            
+            time.sleep(self.key_values['timeII']) # pause for monitoring lever press timeframe  
+            # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
+            
+            # Retract Levers
+            self.thread_pool_submit('retracting lever', self.pins['lever_food'].retract_lever)      
+            
+            time_II_start = time.time() # question: not sure wat this gets used for 
+            
+            time.sleep(delay) # do not give reward until after delay
+            
+            # Dispense Pellet in response to Lever Press
+            print(f'starting pellet dispensing {self.round}, {time.time() - self.start_time}')
+            self.thread_pool_submit('dispense pellet', self.pins['read_pellet'].dispense_pellet)
+
+                    
+            # ----- TODO: was pellet retrieved?! --------
+            self.thread_pool_submit('pellet retrieval', self.pins['read_pellet'].pellet_retrieval)
+            
+            # wait on futures to finish running 
+            attempts = 0
+            print("script futures: ", self.futures)
+            while attempts < 5 : 
+                for future,name in self.futures: 
+                    print(f'(Future Name) {name} (Running) {future.running()}')
+                    time.sleep(3)
+                attempts += 1
+            
+            # Reset Things before start of next round
+            results.event_queue.join() # ensures that all events get written before beginning next round 
+
+            
+            # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
+            results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
+        
+            self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
+        
+        # TODO: analyze and cleanup
+        # results.analysis 
+        
+        return True 
 
 
 def run(csv_input, output_dir, pin_obj_dict=None): 
@@ -156,9 +185,9 @@ def run(csv_input, output_dir, pin_obj_dict=None):
     try: 
         key_values = get_key_values()
         pin_values = get_pin_values()
-        script = Script(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Autoshape(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
         # script.print_pin_status()
-        run_script(script) 
+        script.run_script()
         
     except KeyboardInterrupt: 
         print(" uh oh interrupt! I will clean up and then exit Autoshape.")
