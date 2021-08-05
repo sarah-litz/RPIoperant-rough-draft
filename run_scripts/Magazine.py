@@ -18,21 +18,29 @@ from class_definitions.ScriptClass import Script # import Script # import the pa
 
 
 
-''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
- #  Defined Here: values for pins and key values 
-def get_pin_values():  # TODO: possibly delete this function
+# Pin Values: pair a key with a raspberry pi number so we can access a GPIO pin through a descriptive key 
+def get_pin_values():  # Pin Values: leave this function as is if default pin values are OK. 
     ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
-    pins={}
+    pins={} # If diff pin values are desired, then enter values here. 
     return pins 
 
+
+# Key Values: sets important values that changes the timing/schedule of the script
 def get_key_values(): 
     ''' DEFAULT KEY VALUES DEFINED HERE '''
-    return OrderedDict([('num_rounds', 15), ('round_time',90), 
-                                        ('timeII',2), ('timeIV',2), 
-                                        ('pellet_tone_time',1), ('pellet_tone_hz',2500), 
-                                        ('door_close_tone_hz',7000), ('door_open_tone_time',1), ('door_open_tone_hz',10000),
-                                        ('round_start_tone_time',1), ('round_start_tone_hz',5000)
-                                    ]) 
+    return OrderedDict([('num_rounds', 15),         # Number of rounds to run Magazine 
+                        ('round_time',90),          # Number of seconds each round should run for 
+                        ('timeII',2),               # Number of seconds lever should wait for vole to press 
+                        ('timeIV',2),               # Number of seconds to wait after lever press but before retracting lever 
+                        ('pellet_tone_time',1),     # Number of seconds 'pellet_buzz' will play a sound for 
+                        ('pellet_tone_hz',2500),    # Hertz that the 'pellet_buzz' sound will play
+                        ('door_close_tone_hz',7000),# Number of seconds 'door_close_buzz' will play a sound for
+                        ('door_open_tone_time',1),  # Number of seconds 'door_open_buzz' will play a sound for 
+                        ('door_open_tone_hz',10000),# Hertz that the 'door_open_buzz' sound will play 
+                        ('round_start_tone_time',1),# Number of seconds 'round_buzz' will play a sound for  
+                        ('round_start_tone_hz',5000)# Hertz that the 'round_buzz' will play a sound for 
+                    ]) 
+
 
 class Magazine(Script): 
 
@@ -40,11 +48,11 @@ class Magazine(Script):
         super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
 
         
-        # # # # # # # # # # # # # # # # # # # # #
-        #        Experiment Variables           #
-        #   change these vals to change order   #
-        #      and timing of experiment         # 
-        # # # # # # # # # # # # # # # # # # # # #
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        #                           Experiment Variables                            #
+        #           change these vals to change order and timing of experiment      #
+        #                                                                           # 
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.onPressEvents = [
             lambda: self.pulse_sync_line(length=0.25), 
             lambda: self.buzz(buzz_type='pellet_buzz'),

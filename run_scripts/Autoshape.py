@@ -31,34 +31,43 @@ from class_definitions.ScriptClass import Script # import Script # import the pa
 # ------------------------------------------------------------------------------------
 
 
-''' ~ ~ ~ functions for getting default values! ~ ~ ~ ''' 
-      #  Defined Here: values for pins and key values 
+# Pin Values: pair a key with a raspberry pi number so we can access a GPIO pin through a descriptive key 
+def get_pin_values():  # Pin Values: leave this function as is if default pin values are OK. 
+    ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
+    pins={} # If diff pin values are desired, then enter values here. 
+    return pins 
 
+
+# Key Values: sets important values that changes the timing/schedule of the script
 def get_key_values(): 
     ''' DEFAULT KEY VALUES DEFINED HERE '''
-    return OrderedDict([('num_rounds', 20), ('round_time',90), 
-                                        ('timeII',30), 
-                                        ('pellet_tone_time',1), ('pellet_tone_hz',2500), 
-                                        ('door_close_tone_time', 1), ('door_close_tone_hz',7000), ('door_open_tone_time',1), ('door_open_tone_hz',10000),
-                                        ('round_start_tone_time',1), ('round_start_tone_hz',5000), 
-                                        ('delay by day', [0,0,1,1,2]), ('delay default', 2)
-                                    ]) 
+    return OrderedDict([('num_rounds', 20),              # Number of rounds to run Autoshape 
+                        ('round_time',90),               # Number of seconds each round should run for 
+                        ('timeII',30),                   # Number of seconds lever should wait for vole to press 
+                        ('pellet_tone_time',1),          # Number of seconds 'pellet_buzz' will play a sound for 
+                        ('pellet_tone_hz',2500),         # Hertz that the 'pellet_buzz' sound will play 
+                        ('door_close_tone_time', 1),     # Number of seconds 'door_close_buzz' will play a sound for
+                        ('door_close_tone_hz',7000),     # Hertz that the 'door_close_buzz' sound will play
+                        ('door_open_tone_time',1),       # Number of seconds 'door_open_buzz' will play a sound for
+                        ('door_open_tone_hz',10000),     # Hertz that the 'door_open_buzz' sound will play
+                        ('round_start_tone_time',1),     # Number of seconds 'round_buzz' will play a sound for  
+                        ('round_start_tone_hz',5000),    # Number of seconds 'round_buzz' will play a sound for   
+                        ('delay by day', [0,0,1,1,2]),   # Delay based on what day of experiment it is
+                        ('delay default', 2)             # Default delay time
+                    ]) 
 
-def get_pin_values():  # TODO: possibly delete this function
-    ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
-    pins={}
-    return pins 
+
 
 class Autoshape(Script):    
     def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
         super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
 
         
-        # # # # # # # # # # # # # # # # # # # # #
-        #        Experiment Variables           #
-        #   change these vals to change order   #
-        #      and timing of experiment         # 
-        # # # # # # # # # # # # # # # # # # # # #
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        #                           Experiment Variables                            #
+        #           change these vals to change order and timing of experiment      #
+        #                                                                           # 
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.onPressEvents = [
             lambda: self.pulse_sync_line(length=0.25), 
             lambda: self.buzz(buzz_type='pellet_buzz'),
@@ -76,6 +85,9 @@ class Autoshape(Script):
             lambda: time.sleep(1),         
             lambda: self.pins['lever_food'].retract_lever(), 
         ]
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
 
 
     '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
