@@ -94,8 +94,13 @@ class Script(): # each script that runs gets its own instance of Script created
         self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
         self.futures = []
         self.stop_threads = False 
+
+        # Event Config 
+        self.onPressEvents = []
+        self.noPressEvents = []
                     
     ''' ------------- Private Methods --------------------'''
+    
     # Make changes to the key values if user added to column "key_val_changes" in csv file
     def change_key_values(self, key_values, key_val_changes): 
         if not (pd.isnull(key_val_changes)): # check if user wants to change any key values 
@@ -138,7 +143,76 @@ class Script(): # each script that runs gets its own instance of Script created
         
         return pin_obj_dict
         
-        
+
+
+    def delay(self, sec): # CHANGE: new function
+        time.sleep(sec)
+        return
+
+
+    def configure_callback_events(self, onPressEvents, noPressEvents): 
+        print("Configuring Event Strings")
+        def get_arguments(eventString): 
+            start = eventString.index('(')
+            end = eventString.index(')')
+            args = eventString[start+1:end]
+            return args 
+        def get_arg_val(key, argStr): 
+            if key in argStr: 
+                keyStart = argStr.index(key + '=')
+                start = keyStart + len(key + '=')
+                argVal = argStr[start:]
+                print(argVal)
+                return argVal
+            else: 
+                return None
+
+
+        for funcStr in onPressEvents: 
+            if 'pulse_sync_line' in funcStr: 
+                args = get_arguments(funcStr)
+                argVal = get_arg_val('length', args)
+                try: 
+                    argNum = float(argVal)
+                except ValueError: 
+                    print("cannot convert arg to a number")
+                print(f'lambda: self.pulse_sync_line(length = {argNum})')
+                func = lambda: self.pulse_sync_line(length=argNum)
+                print("Function defined as: ", func)
+            elif 'buzz' in funcStr: 
+                args = get_arguments(funcStr)
+                argStr = get_arg_val('buzz_type', args)
+                # argStr = argStr.replace("'", '')
+                func = lambda: self.buzz(buzz_type = argStr)
+                print(f'lambda: self.buzz(buzz_type = {str(argStr)})')
+            elif 'dispense_pellet' in funcStr: 
+                func = lambda: self.dispense_pellet()
+            elif 'lever' in onPressEvents: 
+                print("PANIC! have not written code for this case yet. ")
+            else: 
+                func = lambda: funcStr
+            self.onPressEvents.append(func)
+
+            '''def configure_callback_events(self, onPressEvents, noPressEvents): # CHANGE: new function
+                # convert strings to function calls 
+                for fun in onPressEvents: 
+                    if 'script' in fun: 
+                        fun = fun.replace('script', 'self')
+                    newFunc = eval('lambda: ' + fun)
+                    self.onPressEvents.append(newFunc)
+                
+                for fun in noPressEvents: 
+                    if 'script' in fun: 
+                        fun = fun.replace('script', 'self')
+                    newFunc = eval('lambda: ' + fun)
+                    self.noPressEvents.append(newFunc)
+                print("ON PRESS EVENTS: ", self.onPressEvents)
+                print("NO PRESS EVENTS: ", self.noPressEvents)'''
+
+
+
+
+
     def setup_Doors(self):  # SJL: get pins of type door_1, then create a Door class for this door.
 
         door_dict = {}
@@ -157,9 +231,64 @@ class Script(): # each script that runs gets its own instance of Script created
             pins_of_door_id = self.get_pins_of_type(f'door_{i}')
         return door_dict
     
-        
+
+   
     ''' ------------- Public Methods ------------------------'''
 
+                
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    #       Functions for managing/monitoring the Thread Pool and its resulting Futures                     #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    def thread_pool_submit(self, event_name, func, *args, **kwargs): 
+        future = self.executor.submit(func, *args, **kwargs)   
+        self.futures.append([future, event_name]) # adds to list of futures to ensure it gets written to output once it finishes 
+
+    def monitor_for_future_results(self): 
+        # separate thread 
+        while True: 
+            ''' loop thru self.futures list(or queue?). Check if the future is done running. If it is, 
+            then get its result and write them to event_queue. If it is not, then leave it be and go to the 
+            next element. Repeat until the round has finished. 
+            ''' 
+            for future,name in (self.futures): 
+                if future.done(): 
+                    self.futures.remove([future,name]) # remove tuple at this index 
+                    # self.futures.remove(future) # remove this future from the list
+                    event_name, timestamp, ifEvent = future.result() # get result
+                    print(f'Future Result: {self.round}, {event_name}, {timestamp-self.start_time}')
+                    self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) 
+                else: 
+                    # we will loop back around to this future later 
+                    time.sleep(0.25)
+            
+            if self.stop_threads is True: 
+                if len(self.futures) == 0: 
+                    logging.debug('all futures were accounted for; finished cleanly')
+                    return 
+                else: 
+                    logging.debug('some futures were not able to finish: ')
+                    for future,name in self.futures: 
+                        logging.debug(f'(Future Name) {name} (Running) {future.running()}')
+                    return 
+
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #  functions for tracking & signaling event occurrences   #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+                       
+    def countdown_timer(self, timeinterval, event): 
+        print("\r")
+        while timeinterval:
+            mins, secs = divmod(timeinterval, 60)
+            timer = '{:02d}:{:02d}'.format(mins, secs)
+            sys.stdout.write(f"\r{timer} until {event}  ")
+            time.sleep(1)
+            timeinterval -= 1
+
+
+    # # # # # # # # # # # # # # # # # # # # 
+    #           Pin Functions             #
+    # # # # # # # # # # # # # # # # # # # # 
     def get_pins_of_type(self, type): 
         # returns pins of the specified type 
         pin_dict = {}
@@ -196,54 +325,26 @@ class Script(): # each script that runs gets its own instance of Script created
         except KeyboardInterrupt:
             print('\n bye!')
             exit()
-                
-    
-    def monitor_for_future_results(self): 
-        # separate thread 
-        while True: 
-            ''' loop thru self.futures list(or queue?). Check if the future is done running. If it is, 
-            then get its result and write them to event_queue. If it is not, then leave it be and go to the 
-            next element. Repeat until the round has finished. 
-            ''' 
-            for future,name in (self.futures): 
-                # future, name = self.futures[indx] # read element at indx 
-                if future.done(): 
-                    self.futures.remove([future,name]) # remove tuple at this index 
-                    # self.futures.remove(future) # remove this future from the list
-                    event_name, timestamp, ifEvent = future.result() # get result
-                    print(f'Future Result: {self.round}, {event_name}, {timestamp-self.start_time}')
-                    self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) 
-                else: 
-                    # we will loop back around to this future later 
-                    time.sleep(0.25)
-            
-            if self.stop_threads is True: 
-                if len(self.futures) == 0: 
-                    logging.debug('all futures were accounted for; finished cleanly')
-                    return 
-                else: 
-                    logging.debug('some futures were not able to finish: ')
-                    for future,name in self.futures: 
-                        logging.debug(f'(Future Name) {name} (Running) {future.running()}')
-                    return 
-                           
-    def countdown_timer(self, timeinterval, event): 
-        print("\r")
-        while timeinterval:
-            mins, secs = divmod(timeinterval, 60)
-            timer = '{:02d}:{:02d}'.format(mins, secs)
-            sys.stdout.write(f"\r{timer} until {event}  ")
-            time.sleep(1)
-            timeinterval -= 1
-
-    def pulse_sync_line(self, round, length): 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #   Pin Functions: These functions call funciton that is  #
+    #   specific to a certain pin allows user to just write   #
+    #   'script.function()' and not specify the pin.          #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+    def pulse_sync_line(self, length, round=None):
+        if round is None: 
+            round = self.round 
         # calls the function pulse_sync_line defined in the Pin class. 
         # doing it this way so from main prog, user doesn't have to worry about specifying the pin since its the same pin every time 
         # write to results 
         print("P U L S E")
-        self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
+        # self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
+        timestamp = time.time()
         self.pins['gpio_sync'].pulse_sync_line(length)
-        return 
+        return f'pulse sync line ({length})', timestamp, True
+
+    def dispense_pellet(self): 
+        print('D I S P E N S E')
+        self.pins['read_pellet'].dispense_pellet()
 
     def buzz(self, buzz_type): 
         # play sound function 
@@ -270,7 +371,7 @@ class Script(): # each script that runs gets its own instance of Script created
             name = 'door_close_tone'
         
         else: 
-            Exception('the specified buzz_type passed to the buzz funciton does not exist. check for spelling errors?')
+            print('the specified buzz_type passed to the buzz funciton does not exist. check for spelling errors?')
             exit()
         
         # write to results 
@@ -293,7 +394,12 @@ class Script(): # each script that runs gets its own instance of Script created
             # TODO/QUESTION: should i write 'no press detected' to output file? 
             # self.executor.submit(self.buzz, 'pellet_buzz')
 
-         
+
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #               cleanup function                  #
+    # # # # # # # # # # # # # # # # # # # # # # # # # #  
+
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
