@@ -60,9 +60,9 @@ def get_key_values():
 
 class Autoshape(Script):    
     def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
-        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
+        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # inherets from Script Class 
 
-        
+        print('KEY VALUES ARE: ', self.key_values)
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         #                           Experiment Variables                            #
         #           change these vals to change order and timing of experiment      #

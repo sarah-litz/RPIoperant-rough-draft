@@ -38,24 +38,6 @@ from class_definitions.hardware_classes.Door import Door # built on top of multi
 eventQ_lock = threading.Lock()
 
 
-'''class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
-    def __init__(self, pin_obj_dict=None, pin_values=None): 
-         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        if pin_obj_dict is None: 
-            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
-        else: 
-            self.pins = pin_obj_dict # pins were already setup in previous script run
-            
-            
-        # Thread Pool 
-        self.executor = ThreadPoolExecutor(max_workers=20) 
-        self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
-        self.futures = []
-        self.stop_threads = False''' 
-        
-        
-        
-
 class Script(): # each script that runs gets its own instance of Script created 
     ''' 
         class Script: 
@@ -71,7 +53,7 @@ class Script(): # each script that runs gets its own instance of Script created
         self.results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
         
         # Setup Values of user's Input Information for running Experiment
-        self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
+        self.key_values = self.change_key_values(key_values, csv_input.filter(like = 'key_val_changes'))
         
         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
         if pin_obj_dict is None: 
@@ -102,17 +84,24 @@ class Script(): # each script that runs gets its own instance of Script created
     ''' ------------- Private Methods --------------------'''
     
     # Make changes to the key values if user added to column "key_val_changes" in csv file
-    def change_key_values(self, key_values, key_val_changes): 
-        if not (pd.isnull(key_val_changes)): # check if user wants to change any key values 
-            key_val_changes_dict = json.loads(key_val_changes)
-            for key in key_val_changes_dict: 
+    def change_key_values(self, key_values, key_val_changes_cols): 
+        for col in key_val_changes_cols: 
+            if not pd.isnull(col): 
+                colStr = col.strip() # get rid of extra white spaces
+                key, val = colStr.split(":")
+
+        # if not (pd.isnull(key_val_changes)): # check if user wants to change any key values 
+            # key_val_changes_dict = json.loads(key_val_changes)
+                #key_val_changes_dict = col
+                #for key in key_val_changes_dict: 
                 if key in key_values: 
-                    key_values.update({key: key_val_changes_dict.get(key)})
+                    # key_values.update({key: key_val_changes_dict.get(key)})
+                    key_values.update({key:int(val)})
                 else: 
                     print(f'** you asked to change the value of "{key}" which is not listed as a value that Magazine script needs to track, so skipped this one **')
-            print("Here are your new key values: ", key_values)
-        else: 
-            print("No changes made to key values, just using the default key values:", key_values)
+                print("Here are your new key values: ", key_values)
+            else: 
+                print("No changes made to key values, just using the default key values:", key_values)
         return key_values
 
     
