@@ -59,8 +59,8 @@ def get_key_values():
 
 
 class Autoshape(Script):    
-    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
-        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # inherets from Script Class 
+    def __init__(self, inputdf, inputfp, output_dir, key_values, csv_row_num, pin_obj_dict=None, pin_values=None): 
+        super().__init__(inputdf, inputfp, output_dir, key_values, csv_row_num, pin_obj_dict, pin_values)
 
         print('KEY VALUES ARE: ', self.key_values)
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -179,25 +179,28 @@ class Autoshape(Script):
             # Reset Things before start of next round
             results.event_queue.join() # ensures that all events get written before beginning next round 
 
+
+            # Update Input CSV file with new rounds completed value 
+            self.inputdf.loc[self.csv_row_num,'rounds_completed'] = self.inputdf.loc[self.csv_row_num, 'rounds_completed'] + 1 # update "rounds completed" in input csv file 
+            self.inputdf.to_csv(self.inputfp)
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
-            results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
-        
+
             self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
         
         # TODO: analyze and cleanup
-        # results.analysis 
+        results.analysis()
         
         return True 
 
 
-def run(csv_input, output_dir, pin_obj_dict=None): 
+def run(inputdf, inputfp, outputdir, csv_row_num, pin_obj_dict=None): 
 
     finalClean = False 
     try: 
         key_values = get_key_values()
         pin_values = get_pin_values()
-        script = Autoshape(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Autoshape(inputdf, inputfp, outputdir, key_values, csv_row_num, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
         # script.print_pin_status()
         script.run_script()
         

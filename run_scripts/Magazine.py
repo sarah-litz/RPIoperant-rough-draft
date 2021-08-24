@@ -44,8 +44,8 @@ def get_key_values():
 
 class Magazine(Script): 
 
-    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
-        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
+    def __init__(self, inputdf, inputfp, output_dir, key_values, csv_row_num, pin_obj_dict=None, pin_values=None): 
+        super().__init__(inputdf, inputfp, output_dir, key_values, csv_row_num, pin_obj_dict, pin_values)
 
         
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -171,11 +171,19 @@ class Magazine(Script):
             
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
-
+           
+            # Update Input CSV file with new rounds completed value 
+            print('#', self.inputdf.loc[self.csv_row_num,'rounds_completed'] )
+            self.inputdf.loc[self.csv_row_num,'rounds_completed'] = self.inputdf.loc[self.csv_row_num, 'rounds_completed'] + 1 # update "rounds completed" in input csv file 
+            print('#', self.inputdf.loc[self.csv_row_num,'rounds_completed'] )
+            self.inputdf.to_csv(self.inputfp)
         
             if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
                 self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
         
+
+
+
         # TODO: analyze and cleanup
         # results.analysis 
         results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
@@ -183,14 +191,19 @@ class Magazine(Script):
         return True 
 
 
-def run(csv_input, output_dir, pin_obj_dict=None): 
+def run(inputdf, inputfp, outputdir, csv_row_num, pin_obj_dict=None): 
     
+    # csv_input = csv_input 
+    # csv_row = csv_input.loc[csv_row_num]
+
+    # print("CSV INPUT:", csv_input) 
+    print("this is only the single row... not the entire input csv path so need to create a way of how we are writing/updating values in the csv file. ")
+
     finalClean = False 
     try: 
-
         key_values = get_key_values()
         pin_values = get_pin_values()
-        script = Magazine(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Magazine(inputdf, inputfp, outputdir, key_values, csv_row_num, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
 
         script.run_script()
         

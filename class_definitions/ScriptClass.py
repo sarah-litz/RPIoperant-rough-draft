@@ -45,15 +45,23 @@ class Script(): # each script that runs gets its own instance of Script created
            then, for each script, if it needs to add more it can override this parent class with a subclass 
     '''
 
-    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None):
+    def __init__(self, inputdf, inputfp, output_dir, key_values, csv_row_num, pin_obj_dict=None, pin_values=None):
 
         # input and output files
-        self.csv_input = csv_input
+        self.inputfp = inputfp
+        self.inputdf = inputdf
+        self.csv_row = inputdf.loc[csv_row_num]
+
+        print('CSV_INPUT:', inputdf)
+        print('CSV_ROW: ', self.csv_row)
+
+        # self.input_df = pd.read_csv(csv_input) 
+        self.csv_row_num = csv_row_num
         self.output_dir = output_dir
-        self.results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
+        self.results = Results(self.csv_row, output_dir) # Results Class monitors output file tasks
         
         # Setup Values of user's Input Information for running Experiment
-        self.key_values = self.change_key_values(key_values, csv_input.filter(like = 'key_val_changes'))
+        self.key_values = self.change_key_values(key_values, self.csv_row.filter(like = 'key_val_changes'))
         self.print_key_val_table() 
 
         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
@@ -82,7 +90,14 @@ class Script(): # each script that runs gets its own instance of Script created
         # Event Config 
         self.onPressEvents = []
         self.noPressEvents = []
-                    
+
+
+
+    def continue_running_check(self): 
+        ''' after printing key values and pin table, check that user wants to procede to running the script '''
+        input("if the key values look correct, enter a (y). Otherwise, enter the letter (n) and we will exit the program.")        
+
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # 
     #               Key Value Functions               #
     # # # # # # # # # # # # # # # # # # # # # # # # # #     
