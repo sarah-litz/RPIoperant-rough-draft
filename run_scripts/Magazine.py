@@ -108,7 +108,8 @@ class Magazine(Script):
         print(f"range for looping: {[i for i in range(1, self.key_values['num_rounds']+1,1)]}")
         
         print(f"setup finished, starting experiment with these key values: \n {self.key_values}: \n")
-        for count in range(0, int(self.key_values['num_rounds'])): 
+        rounds_completed = int(self.inputdf.loc[self.csv_row_num,'rounds_completed'])
+        for count in range(rounds_completed, int(self.key_values['num_rounds'])): 
 
             # ~~ New Round ~~ 
             self.round = count+1
@@ -180,7 +181,11 @@ class Magazine(Script):
         
             if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
                 self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
-        
+            else: 
+                # Final Round just finished; mark this down in the input csv file by setting the "done" value to True 
+                self.inputdf.loc[self.csv_row_num, 'done'] = True 
+                self.inputdf.to_csv(self.inputfp) 
+                
 
 
 
