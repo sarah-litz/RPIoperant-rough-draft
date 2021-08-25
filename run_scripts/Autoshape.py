@@ -176,17 +176,24 @@ class Autoshape(Script):
                     time.sleep(3)
                 attempts += 1
             
+            self.round_reset() 
+
+            '''
             # Reset Things before start of next round
             results.event_queue.join() # ensures that all events get written before beginning next round 
 
-
             # Update Input CSV file with new rounds completed value 
             self.inputdf.loc[self.csv_row_num,'rounds_completed'] = self.inputdf.loc[self.csv_row_num, 'rounds_completed'] + 1 # update "rounds completed" in input csv file 
-            self.inputdf.to_csv(self.inputfp)
+            self.inputdf.to_csv(self.inputfp, index=False)
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
 
-            self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
+            if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
+                self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
+            else: 
+                # Final Round just finished; mark this down in the input csv file by setting the "done" value to True 
+                self.inputdf.loc[self.csv_row_num, 'done'] = True 
+                self.inputdf.to_csv(self.inputfp, index=False) '''
         
         # TODO: analyze and cleanup
         results.analysis()
