@@ -46,16 +46,80 @@ if not os.path.isfile('/etc/RPI_operant/operant_cage_settings_local.py'):
                     'lever_door_1':kit.servo[2], 'door_1':kit.continuous_servo[0],
                     'lever_door_2':kit.servo[12],'door_2':kit. continuous_servo[13]}
 
-else: 
-    print('importing local operant cage settings')
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("operant_cage_settings_local", 
-                                                    "/etc/RPI_operant/operant_cage_settings_local.py")
-    foo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(foo)
 
-    pins = foo.pins
-    lever_angles = foo.lever_angles
-    print(lever_angles)
-    continuous_servo_speeds = foo.continuous_servo_speeds
-    servo_dict = foo.servo_dict 
+
+levers = [
+         {'name':'food', 
+          'servo': kit.servo[14],
+          'extended':40,
+          'retracted':123,
+          'pin' : 27},
+          
+          {'name': 'door_1',
+           'servo' : kit.servo[2],
+           'extended':15,
+           'retracted':98,
+           'pin' : 18},
+          
+          {'name': 'door_2',
+           'servo' : kit.servo[12],
+           'extended':45,
+           'retracted':131,
+           'pin' : 22}]
+
+doors = [
+         {'name': 'door_1',
+          'servo': kit.continuous_servo[0],
+          'stop':0.13, 
+          'close':-0.1, 
+          'open':0.8,
+          'open_time':1.6
+          }
+         ]
+
+buttons =[
+          {'name' : 'door_1',
+           'function' : 'open',
+           'pin' : 25
+          },
+          
+          {'name' : 'door_1',
+           'function' : 'close',
+           'pin' : 25
+          },
+          
+          {'name' : 'door_1',
+           'function' : 'state',
+           'pin' : 4
+          },
+          ]
+
+dispensers = [
+           {'name': 'dispenser',
+            'servo':kit.continuous_servo[1],
+            'stop':0.15,
+            'forward':0.12,
+            'timeout':1,
+            'pin':16                
+            },
+           ]
+
+beams = [
+        {'name' : 'door_1_entrance',
+         'pin' : 12
+          },
+        
+        {'name' : 'door_2_entrance',
+         'pin' : 13
+          },
+]
+
+outputs = [
+           {'name':'gpio_sync',
+            'pin':23,
+            },
+           
+           {'name':'speaker',
+            'pin':21,
+            }
+           ]
