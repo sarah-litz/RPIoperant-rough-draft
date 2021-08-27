@@ -169,28 +169,8 @@ class Magazine(Script):
 
 
             self.round_reset()    
-        '''
-            # Reset Stuff before next round starts
-            results.event_queue.join() # ensures that all events get written before beginning next round 
-                       
-            # Update Input CSV file with new rounds completed value 
-            print('#', self.inputdf.loc[self.csv_row_num,'rounds_completed'] )
-            self.inputdf.loc[self.csv_row_num,'rounds_completed'] = self.inputdf.loc[self.csv_row_num, 'rounds_completed'] + 1 # update "rounds completed" in input csv file 
-            print('#', self.inputdf.loc[self.csv_row_num,'rounds_completed'] )
-            self.inputdf.to_csv(self.inputfp, index=False)
-        
-            if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
-                self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
-            else: 
-                # Final Round just finished; mark this down in the input csv file by setting the "done" value to True 
-                self.inputdf.loc[self.csv_row_num, 'done'] = True 
-                self.inputdf.to_csv(self.inputfp, index=False) '''
                 
-
-
-
-        # TODO: analyze and cleanup
-        # results.analysis 
+        # analyze and cleanup
         results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
         # cleanup runs in finally statement (in the run() function)
         return True 
