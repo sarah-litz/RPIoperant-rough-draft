@@ -1,15 +1,18 @@
 import importlib.util
-from hardware_classes import Door, Lever, Pellet
-import Pellet
-import Output
-import Door
-import Beam
+from .Door import Door
+from .pins_class.Lever import Lever
+from .pins_class.Pellet import Pellet
+from .pins_class.Button import Button
+from .pins_class.Output import Output
+from . import operant_cage_settings_default as default_operant_settings
+# import Beam
 
-default_config_file = ''
+default_config_file = 'class_definitions/hardware_classes/operant_cage_settings_default.py'
 class Box:
     
-    def __init__(self, config_file = None):
+    def __init__(self, config_file=None):
         
+        # Initialize file containing the box values we want to use
         self.config = config_file if config_file else default_config_file
         self.config_name = self.config.split(sep='/')[-1].replace('.py','')
         
@@ -41,7 +44,21 @@ class Box:
                 raise NameError(f'box already has {name} attribute, but tried to make a door with that name. Check for duplicate names in the config file')
 
             setattr(self, new_door.name, new_door)
+        
+        
+        ###############
+        for button in self.config_module.buttons: 
+            
+            new_button = Button(button)
 
+            door = new_button.door 
+            function = new_button.function 
+            name = (f'{function}_{door}_button')
+
+            if hasattr(self,name): 
+                    raise NameError(f'box already has {name} attribute, but tried to make a button with that name. Check for duplicate names in the config file')
+
+            setattr(self, new_button.name, new_button)
 
         ###############
         for dispenser in self.config_module.dispensers:
@@ -56,7 +73,7 @@ class Box:
 
 
         ###############
-        for beam in self.config_module.beams:
+        '''for beam in self.config_module.beams:
             new_beam = Beam(beam)
             
             name = new_beam.name
@@ -64,7 +81,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make a beam with that name. Check for duplicate names in the config file')
             
-            setattr(self, new_beam.name, new_beam)
+            setattr(self, new_beam.name, new_beam)'''
 
 
         ###############
@@ -79,5 +96,6 @@ class Box:
             setattr(self, new_output.name, new_output)
             
         
-        
+        ###############
+
         

@@ -33,28 +33,11 @@ from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin c
 from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass to Pin
 from class_definitions.hardware_classes.pins_class.Pellet import Pellet # subclass to Pin
 from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins
+from class_definitions.hardware_classes.box import Box 
 
 # Globals 
 eventQ_lock = threading.Lock()
 
-
-'''class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
-    def __init__(self, pin_obj_dict=None, pin_values=None): 
-         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        if pin_obj_dict is None: 
-            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
-        else: 
-            self.pins = pin_obj_dict # pins were already setup in previous script run
-            
-            
-        # Thread Pool 
-        self.executor = ThreadPoolExecutor(max_workers=20) 
-        self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
-        self.futures = []
-        self.stop_threads = False''' 
-        
-        
-        
 
 class Script(): # each script that runs gets its own instance of Script created 
     ''' 
@@ -66,6 +49,9 @@ class Script(): # each script that runs gets its own instance of Script created
     def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None):
 
         # input and output files
+        self.box = Box() # create new box 
+
+        
         self.csv_input = csv_input
         self.output_dir = output_dir
         self.results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
@@ -73,7 +59,7 @@ class Script(): # each script that runs gets its own instance of Script created
         # Setup Values of user's Input Information for running Experiment
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
         
-        # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
+        '''# Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
         if pin_obj_dict is None: 
             self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
         else: 
@@ -83,7 +69,7 @@ class Script(): # each script that runs gets its own instance of Script created
                 self.pins[pin].reset() # resets values
         
         # Group the pins up that are for controlling the doors, and pass to new Door object. 
-        self.doors = self.setup_Doors() # returns dictionary for each door. 
+        self.doors = self.setup_Doors() # returns dictionary for each door. '''
         
         # Experiment Information 
         self.round = 0  
@@ -117,8 +103,8 @@ class Script(): # each script that runs gets its own instance of Script created
 
     
     ''' setup pins is to add individual Pin instances to a dictionary that can be accessed in ScriptClass '''                  
-    def setup_pins_dict(self, pin_dict=None): 
-        ''' called from ScriptClass.py during script setup. this returns the initalized pin_obj_dict which contains (pin_name->pin_class_instance) pairs '''
+    '''def setup_pins_dict(self, pin_dict=None): 
+        # called from ScriptClass.py during script setup. this returns the initalized pin_obj_dict which contains (pin_name->pin_class_instance) pairs 
         # function accepts optional argument: user can choose to pass in their own pin dictionary, otherwise the default pins (defined in operant_cage_settings_default.py) are used 
         
         if (pin_dict==None): # check if user passed in argument. If not, assign pin_dict to the default values. 
@@ -141,7 +127,7 @@ class Script(): # each script that runs gets its own instance of Script created
             else: 
                 pin_obj_dict[key] = Pin(key, pin_dict.get(key))
         
-        return pin_obj_dict
+        return pin_obj_dict'''
         
 
 
@@ -401,6 +387,8 @@ class Script(): # each script that runs gets its own instance of Script created
     # # # # # # # # # # # # # # # # # # # # # # # # # #  
 
     def cleanup(self, finalClean = False): 
+        print('script cleanup called.... atm not doing anything. just printing this statement and returning.')
+    '''def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  
         print('script cleanup!')
 
@@ -425,7 +413,7 @@ class Script(): # each script that runs gets its own instance of Script created
             print('gpio cleanup done')
             GPIO.cleanup()
         
-        return     
+        return     '''
     
 
         

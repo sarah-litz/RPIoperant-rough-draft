@@ -67,16 +67,8 @@ levers = [
            'retracted':131,
            'pin' : 22}]
 
-doors = [
-         {'name': 'door_1',
-          'servo': kit.continuous_servo[0],
-          'stop':0.13, 
-          'close':-0.1, 
-          'open':0.8,
-          'open_time':1.6
-          }
-         ]
 
+# Override Buttons and State Switch 
 buttons =[
           {'name' : 'door_1',
            'function' : 'open',
@@ -93,6 +85,19 @@ buttons =[
            'pin' : 4
           },
           ]
+
+
+doors = [
+         {'name': 'door_1',
+          'servo': kit.continuous_servo[0],
+          'stop':0.13,    # Servo Speeds: stop, close, open
+          'close':-0.1, 
+          'open':0.8,
+          'open_time':1.6, 
+          }
+         ]
+
+
 
 dispensers = [
            {'name': 'dispenser',
@@ -123,3 +128,5 @@ outputs = [
             'pin':21,
             }
            ]
+
+

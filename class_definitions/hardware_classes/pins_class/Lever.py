@@ -27,7 +27,7 @@ class Lever():
     # LEVER TYPE: lever_IDs can be "food", "door_1", or "door_2" 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, lever_dict, timestamp_q): 
+    def __init__(self, lever_dict, timestamp_q=None): 
          # inherits self.name and self.number from Pin  
         self.name = lever_dict['name']
         self.type = 'Lever'
@@ -63,7 +63,7 @@ class Lever():
         return 'levers out', timestamp, True
         
     def retract_lever(self): 
-        print("(RETRACTING LEVER) lever angle: ", self.angles)
+        print("(RETRACTING LEVER)")
         retract = self.retracted  
         
         timestamp = time.time() 

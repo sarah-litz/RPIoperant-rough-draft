@@ -26,16 +26,31 @@ TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it
 
         
 class Door(): 
-    def __init__(self, door_id, this_doors_pins): # dictionary of pin objects is passed in 
+    def __init__(self, door_dict): # , door_id, this_doors_pins): # dictionary of pin objects is passed in 
         
-        print(f">> New Door Created: {door_id} << ")
-        '''for p in this_doors_pins.values(): 
-            print(p.name)'''
         
-        self.door_id = door_id # all pins in this_doors_pins will have the same door_id (e.g. 'door_1')
+        print(f">> New Door Created: {door_dict['name']} << ")
+        
+        # name vs door_id????? 
+        # self.door_id = door_dict['name'] # all pins in this_doors_pins will have the same door_id (e.g. 'door_1')
+        self.name = door_dict['name']
+
+        #
+        # Servo Stuff 
+        #   
+        self.servo = door_dict['servo']
+        self.stop_speed = door_dict['stop']
+        self.open_speed = door_dict['open']
+        self.close_speed = door_dict['close']
+
+        # 
+        # Button Stuff
+        #
+        self.buttons = {} # box class adds to this dict 
+    
     
         # Servo Setup 
-        self.servo_door = default_operant_settings.servo_dict.get(f'{door_id}')
+    ''' self.servo_door = default_operant_settings.servo_dict.get(f'{door_id}')
         
         # Servo Values Setup
         self.lever_angles = default_operant_settings.lever_angles.get(f'{door_id}')
@@ -59,7 +74,7 @@ class Door():
         self.t1 = threading.Thread(target=self.monitor_override_button, args=('green',), daemon=True)
         self.t1.start() # Manually open door with this button 
         self.t2 = threading.Thread(target=self.monitor_override_button, args=('red',), daemon=True)
-        self.t2.start()
+        self.t2.start() '''
         
         
     ''' DOOR METHODS '''
@@ -71,90 +86,82 @@ class Door():
             num = "".join(num_filtered) # merges numbers into one string 
             return("door_" + num)
     
-    def isOpen(self): # check if door is open 
-        return GPIO.input(self.state_switch.number) # returns True if door is open, False if it is not open aka is closed 
+    def isOpen(self, state_button): # check if door is open 
+        
+        if state_button: 
+            False # door closed 
+        else: 
+            True # door open 
+        
+        # return GPIO.input(self.state_switch.number) # returns True if door is open, False if it is not open aka is closed 
     
-    '''def set_doors_servo_dict_values(self): 
-        door_id = self.get_door_id()
-         
-        self.servo = [default_operant_settings.servo_dict.get(self.key)]
-        self.servo.append(default_operant_settings.servo_dict.get(door_id) )'''
-    
-    
+        
     def open_door(self):
         ''' opens the door of the Lever object that calls this method '''
         ''' if we want to open a list of doors, will need to call this method for each object in the list '''
         if self.isOpen(): 
             # door is already open 
-            print(f'{self.door_id} was already open')
+            print(f'{self.name} was already open')
             return
         
         if self.close_override is True: # override button was pressed, exit. 
-            print(f'open {self.door_id} stopped due to override!')
+            print(f'open {self.name} stopped due to override!')
             return 
         
-        self.servo_door.throttle =  self.continuous_servo_speed['open']
-        open_time = self.continuous_servo_speed['open time']
+        self.servo.throttle =  self.open_speed
         start = time.time()
 
-        while time.time() < ( start + open_time ): # and not self.door_override[door_id]:
+        while time.time() < ( start + self.open_time ): # and not self.door_override[door_id]:
             #wait for the door to open -- we just have to assume this will take the exact same time of <open_time> each time, since we don't have a switch to monitor for if it opens all the way or not. 
             if self.close_override is True: # check if override button has been pressed during this time 
-                print(f'open {self.door_id} stopped due to override!')
+                print(f'open {self.name} stopped due to override!')
                 return 
             # else: 
             #     time.sleep(0.05)
 
         #door should be open when we hit this point 
-        self.servo_door.throttle = self.continuous_servo_speed['stop']
+        self.servo.throttle = self.stop_speed
         
         # Check that door successfully opened
         # if self.state_switch: 
         if self.isOpen(): 
             # self.open = True # True = Open Door, False = Closed Door 
-            print(f'{self.door_id} should be open now!')
+            print(f'{self.name} should be open now!')
             
         else: # timed out while trying to open the door 
-            print(f'{self.door_id} failed to open')
+            print(f'{self.name} failed to open')
             # self.open = False 
             
     
-    def close_door(self): 
+    def close_door(self, state_button): 
 
         #check if doors are already closed
-        if not self.isOpen(): # False for closed door, True for open door 
-            print(f'{self.door_id} is already closed')
-            return 
-        if not GPIO.input(self.state_switch.number): 
-            print('self.open had the wrong value!! fix this')
-            print(f'{self.door_id} is already closed')
-            # self.open = False
+        if not state_button: # False for closed door, True for open door 
+            print(f'{self.name} is already closed')
             return 
         
-        if self.open_override is True: # check for door override 
-                print(f'close {self.door_id} stopped due to override!')
-                return 
+        # TODO: check for door override button press 
         
         start = time.time()
-        self.servo_door.throttle = self.continuous_servo_speed['close']
+        self.servo.throttle = self.close_speed
         print('isOpen: ', self.isOpen())
         print('time: ', time.time()-start)
-        while self.isOpen() and time.time()-start < TIMEOUT:  
+        while state_button and time.time()-start < TIMEOUT:  
+            pass 
             # repeatedly check the state switch pin to see if the door has shut
-            if self.open_override is True: # checks each iteration to make sure door has not been overriden by button
-                print(f'close {self.door_id} stopped due to override!')
-                return 
+            # check each iteration to make sure door has not been overriden by button
+
             #if not GPIO.input(self.state_switch.number): 
                 # door shut successfully, stop the door 
                 # self.open = False 
             #    self.servo_door.throttle = self.continuous_servo_speed['stop'] # might not need this line here.
                 
-        self.servo_door.throttle = self.continuous_servo_speed['stop']
+        self.servo.throttle = self.stop_speed
         # check the reason for exiting the while loop: (either door actually closed, or reached timeout)
-        if not self.isOpen(): # door successfully closed 
-            print(f'{self.door_id} should be closed now! ')
+        if not state_button: # door successfully closed 
+            print(f'{self.name} should be closed now! ')
         else: 
-            print(f'ah crap, door {self.door_id} didnt close!') 
+            print(f'ah crap, door {self.name} didnt close!') 
         return   
         
                 #if not self.door_override[door_ID]:
