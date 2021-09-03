@@ -23,14 +23,14 @@ class Pellet(Pin):
     # only the pin 'read_pellet' is made as type Pellet 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, pin_name, pin_number): 
-        super().__init__(pin_name, pin_number)
-        # pin of this type will always be the 'read_pellet' pin. 
-        self.servo_pellet = default_operant_settings.servo_dict['dispense_pellet']
-        self.continuous_servo_speeds = default_operant_settings.continuous_servo_speeds['dispense_pellet']
+    def __init__(self, dispenser_dict): 
+        super().__init__(dispenser_dict['name'], dispenser_dict['pin']) # passes the pin name and pin number 
+        
+        self.servo = dispenser_dict['servo']
+        self.stop = dispenser_dict['stop']
+        self.forward = dispenser_dict['forward']
+        self.timeout = dispenser_dict['timeout']
         self.type = 'Pellet'
-        # attributes for tracking the current state of the pellet
-        # self.pellet_exists = False # True if pellet is there, False if no pellet 
     
     def troughEmpty(self): 
         # returns True if pellet is in trough, False if it is not 

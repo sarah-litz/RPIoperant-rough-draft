@@ -78,7 +78,7 @@ class Autoshape(Script):
         ]
 
         self.noPressEvents = [
-            lambda: self.pulse_sync_line(length=0.25), 
+            lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
             lambda: self.buzz(buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
             lambda: self.dispense_pellet(), 
@@ -94,7 +94,8 @@ class Autoshape(Script):
     def run_script(self):  # csv_input is the row that corresponds with the current script getting run 
         
         results = self.results # make results instance to give output data so it's recorded&analyzed 
-        
+        box = self.box 
+
         results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
         self.executor_manager.start() 
         
@@ -106,21 +107,31 @@ class Autoshape(Script):
         else:
             delay = self.key_values['delay by day'][day_num-1] 
             
-        # make sure all doors are closed
-        doors = ['door_1', 'door_2']
-        for d in doors:
-            if self.doors[d].isOpen() is True:  
-                self.doors[d].close_door() 
-        
-    # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
-        levers = ['lever_food', 'lever_door_1', 'lever_door_2']
-        for l in levers: # create thread for fulltime monitoring of each lever
-            self.pins[l].onPressEvents = self.onPressEvents
-            self.pins[l].noPressEvents = self.noPressEvents
-            self.executor.submit(self.pins[l].monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func=self.lever_event_callback)
-        
+        # make sure all doors are closed: 
+            # if door.isOpen(): close_door 
 
-        self.executor.submit(self.pulse_sync_line, length=0.5, round = self.round) # Pulse Event: Experiment Start 
+        if box.door_1.isOpen():  # returns True if door is open, False if it is not open aka is closed 
+            box.door_1.close_door(box.door_1.state_button) 
+        
+        print('\n BOX ATTRIBUTES')
+    # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
+        levers = ['food_lever', 'door_1_lever', 'door_2_lever']
+        attrs = vars(box)
+            # {'kids': 0, 'name': 'Dog', 'color': 'Spotted', 'age': 10, 'legs': 2, 'smell': 'Alot'}
+            # now dump this in some way or another
+        print(', '.join("%s: %s" % item for item in attrs.items()))
+
+        def setup_lever_monitoring_and_events(lever): 
+             # starts up a thread for fulltime monitoring of each lever
+            lever.onPressEvents = self.onPressEvents 
+            lever.noPressEvents = self.noPressEvents 
+            self.executor.submit(lever.monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func = self.lever_event_callback)
+        
+        setup_lever_monitoring_and_events(box.food_lever)
+        setup_lever_monitoring_and_events(box.door_1_lever)
+        setup_lever_monitoring_and_events(box.door_2_lever)
+
+        self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5) # Pulse Event: Experiment Start 
         
         '''________________________________________________________________________________________________________________________________________'''
         
@@ -134,26 +145,23 @@ class Autoshape(Script):
             print("round #",self.round)
             
             # pulse 
-            self.thread_pool_submit('new round', self.pulse_sync_line, length=0.1, round = self.round) # Pulse Event: New Round
+            self.thread_pool_submit('new round', box.gpio_sync.pulse_sync_line, length=0.1) # Pulse Event: New Round
 
             # buzz
-            self.executor.submit(self.buzz, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
+            self.executor.submit(box.speaker, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
 
             # extend food lever
-            self.thread_pool_submit('levers out', self.pins['lever_food'].extend_lever)
+            self.thread_pool_submit('levers out', box.food_lever.extend_lever)
 
             # monitoring for lever press 
-            self.pins['lever_food'].monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
-            ''',                                        callbacks = [
-                                                        lambda: self.pulse_sync_line(round=self.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
-                                                        lambda: self.buzz(buzz_type='pellet_buzz')
-                                                    ])'''
+            box.food_lever.monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
+
             
             time.sleep(self.key_values['timeII']) # pause for monitoring lever press timeframe  
             # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
             
             # Retract Levers
-            self.thread_pool_submit('retracting lever', self.pins['lever_food'].retract_lever)      
+            self.thread_pool_submit('retracting lever', box.food_lever.retract_lever)      
             
             time_II_start = time.time() # question: not sure wat this gets used for 
             
@@ -161,11 +169,11 @@ class Autoshape(Script):
             
             # Dispense Pellet in response to Lever Press
             print(f'starting pellet dispensing {self.round}, {time.time() - self.start_time}')
-            self.thread_pool_submit('dispense pellet', self.pins['read_pellet'].dispense_pellet)
+            self.thread_pool_submit('dispense pellet', box.dispenser.dispense_pellet)
 
                     
             # ----- TODO: was pellet retrieved?! --------
-            self.thread_pool_submit('pellet retrieval', self.pins['read_pellet'].pellet_retrieval)
+            self.thread_pool_submit('pellet retrieval', box.dispenser.pellet_retrieval)
             
             # wait on futures to finish running 
             attempts = 0

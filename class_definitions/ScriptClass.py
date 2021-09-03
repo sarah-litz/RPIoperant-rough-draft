@@ -33,28 +33,11 @@ from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin c
 from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass to Pin
 from class_definitions.hardware_classes.pins_class.Pellet import Pellet # subclass to Pin
 from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins
+from class_definitions.hardware_classes.box import Box 
 
 # Globals 
 eventQ_lock = threading.Lock()
 
-
-'''class SharedScript(): # objects that get shared among the script instances; This will only get created once, and then gets passed to Script instances  
-    def __init__(self, pin_obj_dict=None, pin_values=None): 
-         # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        if pin_obj_dict is None: 
-            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
-        else: 
-            self.pins = pin_obj_dict # pins were already setup in previous script run
-            
-            
-        # Thread Pool 
-        self.executor = ThreadPoolExecutor(max_workers=20) 
-        self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
-        self.futures = []
-        self.stop_threads = False''' 
-        
-        
-        
 
 class Script(): # each script that runs gets its own instance of Script created 
     ''' 
@@ -66,6 +49,9 @@ class Script(): # each script that runs gets its own instance of Script created
     def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None):
 
         # input and output files
+        self.box = Box() # create new box 
+
+        
         self.csv_input = csv_input
         self.output_dir = output_dir
         self.results = Results(csv_input, output_dir) # Resutls Class monitors output file tasks
@@ -73,17 +59,7 @@ class Script(): # each script that runs gets its own instance of Script created
         # Setup Values of user's Input Information for running Experiment
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
         
-        # Setup Dictionary of Names of Pins, and create the pin as a Pin Object or Lever Object (subclass of Pin)
-        if pin_obj_dict is None: 
-            self.pins = self.setup_pins_dict(pin_dict=None) # dictionary of all the individual pin objects
-        else: 
-            # pins were already setup in previous script run
-            self.pins = pin_obj_dict # set to pin dict that is already setup 
-            for pin in self.pins: 
-                self.pins[pin].reset() # resets values
-        
-        # Group the pins up that are for controlling the doors, and pass to new Door object. 
-        self.doors = self.setup_Doors() # returns dictionary for each door. 
+
         
         # Experiment Information 
         self.round = 0  
@@ -94,13 +70,13 @@ class Script(): # each script that runs gets its own instance of Script created
         self.executor_manager = threading.Thread(target=self.monitor_for_future_results, daemon=True)
         self.futures = []
         self.stop_threads = False 
+#         self._setup_fulltime_threads() 
 
         # Event Config 
         self.onPressEvents = []
         self.noPressEvents = []
                     
-    ''' ------------- Private Methods --------------------'''
-    
+
     # Make changes to the key values if user added to column "key_val_changes" in csv file
     def change_key_values(self, key_values, key_val_changes): 
         if not (pd.isnull(key_val_changes)): # check if user wants to change any key values 
@@ -115,125 +91,10 @@ class Script(): # each script that runs gets its own instance of Script created
             print("No changes made to key values, just using the default key values:", key_values)
         return key_values
 
-    
-    ''' setup pins is to add individual Pin instances to a dictionary that can be accessed in ScriptClass '''                  
-    def setup_pins_dict(self, pin_dict=None): 
-        ''' called from ScriptClass.py during script setup. this returns the initalized pin_obj_dict which contains (pin_name->pin_class_instance) pairs '''
-        # function accepts optional argument: user can choose to pass in their own pin dictionary, otherwise the default pins (defined in operant_cage_settings_default.py) are used 
         
-        if (pin_dict==None): # check if user passed in argument. If not, assign pin_dict to the default values. 
-            pin_dict = default_operant_settings.pins
-        elif not pin_dict: # user passed argument, but the dictionary is empty.
-            pin_dict = default_operant_settings.pins
-        
-        # create new dictionary where each element is (pin_name:Pin_class_instance)
-        pin_obj_dict= {} # inialize empty dict
-        
-        # set the type of the pin based on the pin's name, and then create instance of Pin and append this to pin_obj_dict
-        for key in pin_dict.keys(): 
-            
-            # instantiate pin object based on type
-            
-            if 'lever' in key: 
-                pin_obj_dict[key] = Lever(key, pin_dict.get(key)) 
-            elif 'pellet' in key: 
-                pin_obj_dict[key] = Pellet(key, pin_dict.get(key))
-            else: 
-                pin_obj_dict[key] = Pin(key, pin_dict.get(key))
-        
-        return pin_obj_dict
-        
-
-
     def delay(self, sec): # CHANGE: new function
         time.sleep(sec)
         return
-
-
-    def configure_callback_events(self, onPressEvents, noPressEvents): 
-        print("Configuring Event Strings")
-        def get_arguments(eventString): 
-            start = eventString.index('(')
-            end = eventString.index(')')
-            args = eventString[start+1:end]
-            return args 
-        def get_arg_val(key, argStr): 
-            if key in argStr: 
-                keyStart = argStr.index(key + '=')
-                start = keyStart + len(key + '=')
-                argVal = argStr[start:]
-                print(argVal)
-                return argVal
-            else: 
-                return None
-
-
-        for funcStr in onPressEvents: 
-            if 'pulse_sync_line' in funcStr: 
-                args = get_arguments(funcStr)
-                argVal = get_arg_val('length', args)
-                try: 
-                    argNum = float(argVal)
-                except ValueError: 
-                    print("cannot convert arg to a number")
-                print(f'lambda: self.pulse_sync_line(length = {argNum})')
-                func = lambda: self.pulse_sync_line(length=argNum)
-                print("Function defined as: ", func)
-            elif 'buzz' in funcStr: 
-                args = get_arguments(funcStr)
-                argStr = get_arg_val('buzz_type', args)
-                # argStr = argStr.replace("'", '')
-                func = lambda: self.buzz(buzz_type = argStr)
-                print(f'lambda: self.buzz(buzz_type = {str(argStr)})')
-            elif 'dispense_pellet' in funcStr: 
-                func = lambda: self.dispense_pellet()
-            elif 'lever' in onPressEvents: 
-                print("PANIC! have not written code for this case yet. ")
-            else: 
-                func = lambda: funcStr
-            self.onPressEvents.append(func)
-
-            '''def configure_callback_events(self, onPressEvents, noPressEvents): # CHANGE: new function
-                # convert strings to function calls 
-                for fun in onPressEvents: 
-                    if 'script' in fun: 
-                        fun = fun.replace('script', 'self')
-                    newFunc = eval('lambda: ' + fun)
-                    self.onPressEvents.append(newFunc)
-                
-                for fun in noPressEvents: 
-                    if 'script' in fun: 
-                        fun = fun.replace('script', 'self')
-                    newFunc = eval('lambda: ' + fun)
-                    self.noPressEvents.append(newFunc)
-                print("ON PRESS EVENTS: ", self.onPressEvents)
-                print("NO PRESS EVENTS: ", self.noPressEvents)'''
-
-
-
-
-
-    def setup_Doors(self):  # SJL: get pins of type door_1, then create a Door class for this door.
-
-        door_dict = {}
-        i = 1 
-        pins_of_door_id = self.get_pins_of_type(f'door_{i}')
-        while len(pins_of_door_id) != 0: # check if list is empty  
-            
-            # this assumes that the doors will be named in chronological order; door_1, door_2, door_3, etc. 
-            # so, for example, if door_3 comes back with <None>, then we assume that we have only 2 doors 
-            
-            # create door_i instance and send the pins that belong to this door  
-            door_dict[f'door_{i}'] = Door( f'door_{i}', pins_of_door_id)
-            
-            # increment and get next door 
-            i = i + 1
-            pins_of_door_id = self.get_pins_of_type(f'door_{i}')
-        return door_dict
-    
-
-   
-    ''' ------------- Public Methods ------------------------'''
 
                 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -330,7 +191,7 @@ class Script(): # each script that runs gets its own instance of Script created
     #   specific to a certain pin allows user to just write   #
     #   'script.function()' and not specify the pin.          #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
-    def pulse_sync_line(self, length, round=None):
+    '''def pulse_sync_line(self, length, round=None):
         if round is None: 
             round = self.round 
         # calls the function pulse_sync_line defined in the Pin class. 
@@ -378,7 +239,7 @@ class Script(): # each script that runs gets its own instance of Script created
         self.results.event_queue.put([self.round, f'{name} tone start {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])
         self.pins['speaker_tone'].buzz(buzz_len, hz) 
         self.results.event_queue.put([self.round, f'{name} tone complete {hz}:hz {buzz_len}:seconds', time.time() - self.start_time ])        
-        return buzz_len, hz, name 
+        return buzz_len, hz, name '''
 
 
     def lever_event_callback(self, object, event_name, timestamp): 
@@ -408,7 +269,13 @@ class Script(): # each script that runs gets its own instance of Script created
         if self.executor_manager.is_alive(): # if thread is running 
             logging.debug('waiting for executor manager to finish its final loop thru the executor threads (ScriptClass.py)')
             self.executor_manager.join() # waits so last loop thru can finish 
-        
+    
+    
+        for object in self.box.object_list: 
+            object.cleanup()
+
+
+    ''' 
         for d in self.doors: 
             self.doors[d].cleanup() # shuts doors and shuts off door servos 
         self.results.cleanup() # finishes writing stuff in event_queue to output file
@@ -425,7 +292,7 @@ class Script(): # each script that runs gets its own instance of Script created
             print('gpio cleanup done')
             GPIO.cleanup()
         
-        return     
+        return     '''
     
 
         

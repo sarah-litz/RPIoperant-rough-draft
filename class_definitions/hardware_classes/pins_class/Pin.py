@@ -46,12 +46,9 @@ class Pin(): # class for a single pin
         self.pin_event_queue = Queue()
         self.type = 'Pin'
     
-    ''' --------- Private Setup Methods --------------'''
-    '''def type_setup(self): 
-        if 'door' in self.name:
-                type = 'door'
-        
-        return type''' 
+
+    def single_pin_setup(self): 
+        GPIO.setup(self.number, )
     
     def gpio_setup(self): # setup with GPIO and create new instance based on type where necessary. (accessed thru self.type_instance)
        

@@ -27,7 +27,9 @@ def set_input_fp(csv_in):
 def set_output_dir(output_loc):
     if output_loc:
         if not os.path.isdir(output_loc):
-            selection  = input(f'\n\nhmmm, output location {output_loc} doesnt exist. make it? \ne (exit) \ny (make new directory) \nn (use default output location /home/pi/test_outputs/)\n\n')
+            # selection = input(f'output location {output_loc} ')
+            selection  = input(f'\n\nhmmm, output location {output_loc} doesnt exist. make it? \ne (exit) \ny (make new directory) \nn (use default output location /home/pi/test_outputs/) \n')
+            selection = input('hello')
             selection = selection.lower()
             if not selection in ['y', 'n','e']:
                 print('invalid choice. see ya!')
