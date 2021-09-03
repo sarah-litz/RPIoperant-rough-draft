@@ -11,12 +11,25 @@ class Button():
 
         self.door = button_dict['name']
         self.function = button_dict['function']
-        self.name = (f'{self.function}_{self.door}_button')
+        self.name = button_dict['name']
 
         self.pin = button_dict['pin']
         self._gpio_setup_pin() 
 
     def _gpio_setup_pin(self): 
         GPIO.setup(self.pin, GPIO.IN)
+    
+
+    def monitor_for_button_press(self, button_press_flag): 
+        
+        button_press_flag = False 
+        GPIO.add_event_detect(self.pin, GPIO.FALLING, bouncetime=200)
+        while True: 
+            if GPIO.event_detected(self.pin): 
+                button_press_flag = True   
+
+    def cleanup(self): 
+        pass 
+
 
 

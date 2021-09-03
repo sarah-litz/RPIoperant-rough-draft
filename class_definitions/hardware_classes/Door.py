@@ -43,11 +43,11 @@ class Door():
         self.open_speed = door_dict['open']
         self.close_speed = door_dict['close']
 
-        # 
-        # Button Stuff
         #
-        self.buttons = {} # box class adds to this dict 
-    
+        # Button Stuff 
+        #       --> button attributes are defined/assigned to a door by the box class 
+        #       --> each door should have an 'open' and 'close' button, as well as a 'state' button which denotes the current state (open or close) of a door. 
+        
     
         # Servo Setup 
     ''' self.servo_door = default_operant_settings.servo_dict.get(f'{door_id}')
@@ -86,14 +86,12 @@ class Door():
             num = "".join(num_filtered) # merges numbers into one string 
             return("door_" + num)
     
-    def isOpen(self, state_button): # check if door is open 
+    def isOpen(self): # check if door is open 
         
-        if state_button: 
+        if self.state_button: 
             False # door closed 
         else: 
             True # door open 
-        
-        # return GPIO.input(self.state_switch.number) # returns True if door is open, False if it is not open aka is closed 
     
         
     def open_door(self):
@@ -209,18 +207,20 @@ class Door():
             
     def cleanup(self): 
         # QUESTION: should we ensure doors are open and/or closed when we finish?? 
-        # kill threads 
-        if self.isOpen(): 
-            self.close_door() 
-        self.stop_threads = True 
+        
+        '''if self.isOpen(): 
+            self.close_door()'''
+
+        # kill threads
+        '''self.stop_threads = True 
         GPIO.remove_event_detect(self.override_open_switch.number)
-        GPIO.remove_event_detect(self.override_close_switch.number)
+        GPIO.remove_event_detect(self.override_close_switch.number)'''
 
         # emergency stop: 
-        self.servo_door.throttle = self.continuous_servo_speed['stop']  # force shutoff if any servos are left moving
+        self.servo.throttle = self.stop_speed  # force shutoff if any servos are left moving
         
-        self.t1.join()
-        self.t2.join()
+        # self.t1.join()
+        # self.t2.join()
         
     
              

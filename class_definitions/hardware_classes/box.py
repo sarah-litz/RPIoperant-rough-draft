@@ -21,6 +21,8 @@ class Box:
                                                       self.config)
         self.config_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.config_module)
+
+        self.object_list = [] # appends list of all objects for easy cleanup at experiment end 
         #---------------------------------------------------------------#
         
         
@@ -32,6 +34,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make a lever with that name. Check for duplicate names in the config file')
             
+            self.object_list.append(new_lever)
             setattr(self, name, new_lever)
 
 
@@ -43,6 +46,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make a door with that name. Check for duplicate names in the config file')
 
+            self.object_list.append(new_door)
             setattr(self, new_door.name, new_door)
         
         
@@ -51,14 +55,18 @@ class Box:
             
             new_button = Button(button)
 
-            door = new_button.door 
+            door_name = new_button.door 
+            door = getattr(self, door_name) # get door object 
+
             function = new_button.function 
-            name = (f'{function}_{door}_button')
+            # name = (f'{function}_{door_name}_button')
+            name = (f'{function}_button')
 
-            if hasattr(self,name): 
-                    raise NameError(f'box already has {name} attribute, but tried to make a button with that name. Check for duplicate names in the config file')
+            if hasattr(door,name): 
+                    raise NameError(f'{door_name} already contains a {name} attribute, but tried to make a button with that name. Check for duplicate names in the config file')
 
-            setattr(self, new_button.name, new_button)
+            self.object_list.append(new_button)
+            setattr(door, name, new_button)
 
         ###############
         for dispenser in self.config_module.dispensers:
@@ -69,6 +77,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make a dispenser with that name. Check for duplicate names in the config file')
             
+            self.object_list.append(new_dispenser)
             setattr(self, name, new_dispenser)
 
 
@@ -93,6 +102,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make an output with that name. Check for duplicate names in the config file')
             
+            self.object_list.append(new_output)
             setattr(self, new_output.name, new_output)
             
         

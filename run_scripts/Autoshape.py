@@ -78,7 +78,7 @@ class Autoshape(Script):
         ]
 
         self.noPressEvents = [
-            lambda: self.pulse_sync_line(length=0.25), 
+            lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
             lambda: self.buzz(buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
             lambda: self.dispense_pellet(), 
@@ -110,8 +110,8 @@ class Autoshape(Script):
         # make sure all doors are closed: 
             # if door.isOpen(): close_door 
 
-        if box.door_1.isOpen(box.state_door_1_button):  # returns True if door is open, False if it is not open aka is closed 
-            box.door_1.close_door(box.state_door_1_button) 
+        if box.door_1.isOpen():  # returns True if door is open, False if it is not open aka is closed 
+            box.door_1.close_door(box.door_1.state_button) 
         
         print('\n BOX ATTRIBUTES')
     # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
@@ -131,7 +131,7 @@ class Autoshape(Script):
         setup_lever_monitoring_and_events(box.door_1_lever)
         setup_lever_monitoring_and_events(box.door_2_lever)
 
-        self.executor.submit(self.pulse_sync_line, length=0.5, round = self.round) # Pulse Event: Experiment Start 
+        self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5) # Pulse Event: Experiment Start 
         
         '''________________________________________________________________________________________________________________________________________'''
         
@@ -148,17 +148,14 @@ class Autoshape(Script):
             self.thread_pool_submit('new round', box.gpio_sync.pulse_sync_line, length=0.1) # Pulse Event: New Round
 
             # buzz
-            self.executor.submit(self.buzz, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
+            self.executor.submit(box.speaker, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
 
             # extend food lever
             self.thread_pool_submit('levers out', box.food_lever.extend_lever)
 
             # monitoring for lever press 
             box.food_lever.monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
-            ''',                                        callbacks = [
-                                                        lambda: self.pulse_sync_line(round=self.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
-                                                        lambda: self.buzz(buzz_type='pellet_buzz')
-                                                    ])'''
+
             
             time.sleep(self.key_values['timeII']) # pause for monitoring lever press timeframe  
             # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 

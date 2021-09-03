@@ -68,6 +68,8 @@ class Output():
         pi.set_PWM_dutycycle(self.number, 0) # turn off sound 
         return 
         
+    def cleanup(self): 
+        pass 
 
 
 
