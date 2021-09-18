@@ -23,7 +23,7 @@ class Pellet(Pin):
     # only the pin 'read_pellet' is made as type Pellet 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, dispenser_dict): 
+    def __init__(self, dispenser_dict, timestamp_q): 
         super().__init__(dispenser_dict['name'], dispenser_dict['pin']) # passes the pin name and pin number 
         
         self.servo = dispenser_dict['servo']

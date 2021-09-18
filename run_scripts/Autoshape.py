@@ -113,23 +113,16 @@ class Autoshape(Script):
         if box.door_1.isOpen():  # returns True if door is open, False if it is not open aka is closed 
             box.door_1.close_door(box.door_1.state_button) 
         
-        print('\n BOX ATTRIBUTES')
-    # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
-        levers = ['food_lever', 'door_1_lever', 'door_2_lever']
-        attrs = vars(box)
-            # {'kids': 0, 'name': 'Dog', 'color': 'Spotted', 'age': 10, 'legs': 2, 'smell': 'Alot'}
-            # now dump this in some way or another
-        print(', '.join("%s: %s" % item for item in attrs.items()))
-
-        def setup_lever_monitoring_and_events(lever): 
-             # starts up a thread for fulltime monitoring of each lever
+        
+        # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
+        leverlist=[box.food_lever,box.door_1_lever,box.door_2_lever]
+        for lever in leverlist: 
+            lever.press_timeout = self.key_values['timeII']
             lever.onPressEvents = self.onPressEvents 
             lever.noPressEvents = self.noPressEvents 
-            self.executor.submit(lever.monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func = self.lever_event_callback)
-        
-        setup_lever_monitoring_and_events(box.food_lever)
-        setup_lever_monitoring_and_events(box.door_1_lever)
-        setup_lever_monitoring_and_events(box.door_2_lever)
+            # self.executor.submit(lever.monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func = self.lever_event_callback)
+
+
 
         self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5) # Pulse Event: Experiment Start 
         
@@ -154,8 +147,8 @@ class Autoshape(Script):
             self.thread_pool_submit('levers out', box.food_lever.extend_lever)
 
             # monitoring for lever press 
-            box.food_lever.monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
-
+            # box.food_lever.monitor_lever(press_timeout=self.key_values['timeII'], required_presses=1)                 
+            box.food_lever.wait_for_n_presses(required_presses=2)
             
             time.sleep(self.key_values['timeII']) # pause for monitoring lever press timeframe  
             # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
@@ -184,12 +177,16 @@ class Autoshape(Script):
                     time.sleep(3)
                 attempts += 1
             
+            
+            box.timestamp_q.print_items()
             # Reset Things before start of next round
-            results.event_queue.join() # ensures that all events get written before beginning next round 
+            box.timestamp_q.finish_writing_items() # ensures that all events get written before beginning next round 
+            # results.event_queue.join() # ensures that all events get written before beginning next round 
+            box.timestamp_q.print_items()
 
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
-            results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
+            # results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
         
             self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
         

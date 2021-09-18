@@ -5,6 +5,7 @@
 -------------------------------------------------------------------------------------------------------------------------------------------------'''
 #!/usr/bin/python3
 
+# local imports
 # standard lib imports 
 import traceback
 import time
@@ -27,8 +28,8 @@ class Lever():
     # LEVER TYPE: lever_IDs can be "food", "door_1", or "door_2" 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, lever_dict, timestamp_q=None): 
-         # inherits self.name and self.number from Pin  
+    def __init__(self, lever_dict, timestamp_q):
+
         self.name = lever_dict['name']
         self.type = 'Lever'
         self.servo = lever_dict['servo']
@@ -38,12 +39,15 @@ class Lever():
         
         self.timestamp_q = timestamp_q
 
+        self.all_lever_presses = 0 # num of all presses (including outside of designated timeframe)
         self.monitoring = False 
+        self.stop_threads = False 
+
         self._gpio_setup_pin()
         
 
     def _gpio_setup_pin(self):
-        GPIO.setup(self.pin, GPIO.IN)
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     ''' ---------------- Public Methods --------------- '''
     def extend_lever(self): 
@@ -62,71 +66,82 @@ class Lever():
         self.servo.angle = extend 
         return 'levers out', timestamp, True
         
-    def retract_lever(self): 
-        print("(RETRACTING LEVER)")
-        retract = self.retracted  
-        
+    def retract_lever(self):         
         timestamp = time.time() 
-        self.servo.angle = retract 
-        return 'levers retracted', timestamp, True
+        self.servo.angle = self.retracted 
+        self.timestamp_q.put_item(time.time(), f'({self.name}) Retracted')
+        return f'{self.name} Retracted', timestamp, True 
     
 
-    def monitor_lever(self, press_timeout, required_presses=1, callbacks=[]): 
+    def wait_for_n_presses(self, required_presses): 
+        
+        start_time = time.time() 
+        presses = 0 
+
+        GPIO.add_event_detect(self.pin, GPIO.BOTH, bouncetime=500)
+        while (presses < required_presses and time.time()-start_time <  self.press_timeout): 
+            if GPIO.event_detected(self.pin): 
+                presses += 1
+            else: time.sleep(0.025) 
+        GPIO.remove_event_detect(self.pin)
+
+        # check reason for breaking out of while loop 
+        if presses >= required_presses: 
+            print("presses:", presses, "   required_presses:", required_presses)
+            self.timestamp_q.put_item(timestamp=time.time(), event_descriptor=f'{self.name} detected {presses} lever presses')
+            print(f'{presses} lever presses were detected for {self.name}')
+        else: 
+            print(f'{self.name} did not detect enough presses within {self.press_timeout} seconds. Detected {presses} out of the required {required_presses} presses.')
+
+                
+
+    '''def monitor_lever(self, press_timeout, required_presses=1): 
         # sets required attributes and signals monitor_lever_continuous to call monitor_lever_timeframe 
         self.required_presses = required_presses # set the number of presses that vole must perform to trigger reward
         self.press_timeout = press_timeout # num of seconds vole has to press lever 
         self.monitoring = True # signals the Lever Monitoring Thread that we are now in timeframe where we want vole to make a lever press. 
-        
-        if not callbacks: 
-            # callback list is empty
-            # use the globally defined one 
-            # goal is to eventually have this so self.onPressEvents is initialized to these global funciton
-            print("ONPRESS callbacks set in lever.py: ", self.onPressEvents)
-            print("NOPRESS callbacks set in lever.py: ", self.noPressEvents)
-        else: 
-            print("CALLBACKS PASSED IN ARE:", callbacks)
-            for fun in callbacks: 
-                self.onPressEvents.append(fun)
+        print(f"Setting {self.name} lever monitoring to True")
        
 
     def monitor_lever_continuous(self, onPressEvents, noPressEvents, callback_func): 
+        print('MONITOR LEVER CONTINUOUS')
         # rn, callback function is always script.lever_event_callback
         # purpose is to have a constant monitoring of any presses that occur on the lever. 
         # TODO/QUESTION: i am unclear on what I should be doing with this collected information?? so for now I am just gonna let it sit in a queue 
-        GPIO.add_event_detect(self.number, GPIO.RISING, bouncetime=500)
+        GPIO.add_event_detect(self.pin, GPIO.RISING, bouncetime=500)
         print(f'starting background thread running to look for events at {self.name}')
         
         while self.stop_threads is False: 
              
             if self.monitoring is False: 
-                if GPIO.event_detected(self.number): 
+                if GPIO.event_detected(self.pin): 
                     logging.debug('lever press outside of designated timeframe')
-                    self.all_lever_presses.put('lever press outside of designated timeframe', time.time())
+                    self.all_lever_presses.append('lever press outside of designated timeframe', time.time())
                     
             else: 
                 logging.debug(f'{self.name} monitoring was set to True. Waiting to see if there is a lever press...')
                 event_name, timestamp = self.monitor_lever_timeframe() 
                 if event_name: 
-                    self.all_lever_presses.put(event_name, timestamp) # if event, add to queue of all lever presses
+                    self.all_lever_presses.append(event_name, timestamp) # if event, add to queue of all lever presses
+                    events = onPressEvents
+                else: 
+                    events = noPressEvents
+                for func in events: 
+                    print(f"CALLING A CALLBACK FUNC: {func}")
+                    try: func()
+                    except (NameError): 
+                        print(f"Name of func ({func}) not recognized")
+                    except (TypeError): 
+                        print("type error")
                     
-                    for func in onPressEvents: 
-                        print(f"CALLING A CALLBACK FUNC: {func}")
-                        try: func()
-                        except (NameError): 
-                            print(f"Name of func ({func}) not recognized")
-                        except (TypeError): 
-                            print("type error")
-                    
-                    self.onPressEvents.clear() # reset to empty list of callbacks since these should only happen once. 
-                
                 callback_func(self.name, event_name, timestamp) # Callback function (lever_event_callback in ScriptClass.py)
                 
                 self.monitoring = False # monitoring should never happen for more than 1 iteration in a row, so we set to False. 
 
             time.sleep(0.025)
         
-        GPIO.remove_event_detect(self.number) # This statement will execute during cleanup() 
-        logging.debug(f'ending thread to look for events at {self.name}')
+        GPIO.remove_event_detect(self.pin) # This statement will execute during cleanup() 
+        print(f'ending thread to look for events at {self.name}')
 
     def monitor_lever_timeframe(self): 
         
@@ -136,7 +151,7 @@ class Lever():
 
         while True: # loops until an event is detected or we reach timeout 
                         
-            if GPIO.event_detected(self.number): # monitor for if vole presses the food lever 
+            if GPIO.event_detected(self.pin): # monitor for if vole presses the food lever 
                 timestamp = time.time()
                 presses+=1
                 # self.lever_press_queue.put(time.time())
@@ -149,21 +164,24 @@ class Lever():
                 print(f'no press detected at {self.name}.')
                 return False, time.time()
             
-            time.sleep(0.025)       
+            time.sleep(0.025) '''      
 
 
 
     ''' Cleanup and Reset functions '''    
-    def reset(self): 
+    '''def reset(self): 
         # Values that are reset every round 
         self.stop_threads = False # used in continuous monitoring 
-        self.event_count = 0 # incremented each time an event is counted. This should get reset each new round. 
-        self.press_timeout = 0 
-        self.required_presses = 1
+        # self.event_count = 0 # incremented each time an event is counted. This should get reset each new round. 
+        # self.press_timeout = 0 
+        # self.required_presses = 1
         self.monitoring = False
-        self.onPressEvents.clear()
+        # self.onPressEvents.clear()'''
 
             
     def cleanup(self): 
+        '''print("All Lever Presses: ") 
+        for press in self.all_lever_presses: 
+            print(press)'''
         self.stop_threads = True # forces threads that are monitoring a lever to complete
-            
+        # print(f'I recorded a total of {len(self.all_lever_presses)} lever presses for {self.name}')

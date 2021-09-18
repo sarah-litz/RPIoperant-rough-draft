@@ -1,9 +1,11 @@
 import importlib.util
+from queue import Queue
 from .Door import Door
 from .pins_class.Lever import Lever
 from .pins_class.Pellet import Pellet
 from .pins_class.Button import Button
 from .pins_class.Output import Output
+from .Timestamp import TimestampQueue
 from . import operant_cage_settings_default as default_operant_settings
 # import Beam
 
@@ -22,13 +24,14 @@ class Box:
         self.config_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.config_module)
 
+        self.timestamp_q = TimestampQueue()
         self.object_list = [] # appends list of all objects for easy cleanup at experiment end 
         #---------------------------------------------------------------#
         
         
         ###############
         for lever in self.config_module.levers:
-            new_lever = Lever(lever)
+            new_lever = Lever(lever, self.timestamp_q)
             
             name = new_lever.name+'_lever'
             if hasattr(self, name):
@@ -40,7 +43,14 @@ class Box:
 
         ###############
         for door in self.config_module.doors:
-            new_door = Door(door)
+
+            # get buttons connected with door 
+            button_dict = {}
+            for button in self.config_module.buttons: 
+                if button['name'] == door['name']: 
+                    new_button = Button(button, self.timestamp_q)
+                    button_dict[new_button.function] = new_button
+            new_door = Door(door, button_dict, self.timestamp_q)
             
             name = new_door.name
             if hasattr(self, name):
@@ -53,7 +63,7 @@ class Box:
         ###############
         for button in self.config_module.buttons: 
             
-            new_button = Button(button)
+            new_button = Button(button, self.timestamp_q)
 
             door_name = new_button.door 
             door = getattr(self, door_name) # get door object 
@@ -70,7 +80,7 @@ class Box:
 
         ###############
         for dispenser in self.config_module.dispensers:
-            new_dispenser = Pellet(dispenser)
+            new_dispenser = Pellet(dispenser, self.timestamp_q)
             
             name = new_dispenser.name
             
@@ -95,7 +105,7 @@ class Box:
 
         ###############
         for output in self.config_module.outputs:
-            new_output = Output(output)
+            new_output = Output(output, self.timestamp_q)
             
             name = new_output.name
             

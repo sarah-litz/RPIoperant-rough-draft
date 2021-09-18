@@ -20,32 +20,38 @@ import RPi.GPIO as GPIO
 
 # local imports 
 import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
-
+from class_definitions.hardware_classes.pins_class.Button import Button 
 # globals 
 TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it did not complete 
 
         
 class Door(): 
  
-    def __init__(self, door_dict, timestamp_q, reward = None): # dictionary of pin objects is passed in 
+    def __init__(self, door_dict, door_buttons, timestamp_q, reward = None): # dictionary of pin objects is passed in 
         
-        self.name = lever_dict['name']
+        self.timestamp_q = timestamp_q
+
+        self.name = door_dict['name']
         self.type = 'Door'
-        self.servo = lever_dict['servo']
-        self.stop_speed = lever_dict['stop']
-        self.close_speed = lever_dict['close']
-        self.open_speed = lever_dict['open']
-        self.open_time = lever_dict['open_time']
+        self.servo = door_dict['servo']
+        self.stop_speed = door_dict['stop']
+        self.close_speed = door_dict['close']
+        self.open_speed = door_dict['open']
+        self.open_time = door_dict['open_time']
         
-        self.override_open_pin = lever_dict['override_open_pin']
-        self.override_close_pin = lever_dict['override_close_pin']
-        self.state_pin = lever_dict['state_pin']
+        self.open_override = door_buttons['open']
+        self.close_override = door_buttons['close']
+        self.state = door_buttons['state']
+        
+        '''self.override_open_pin = door_dict['override_open_pin']
+        self.override_close_pin = door_dict['override_close_pin']
+        self.state_pin = door_dict['state_pin']'''
         
     
         # Servo Setup 
 
         
-       ''' # Tracking Door States 
+    ''' # Tracking Door States 
         # self.open = GPIO.input(self.state_switch.number) # state of door; if True, the door is open. if False, door is closed. 
         self.open_override = False # if user needs to manually override door funcitonality w/ buttons, this becomes True
         self.close_override = False

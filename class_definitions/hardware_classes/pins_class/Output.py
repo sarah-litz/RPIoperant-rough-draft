@@ -10,9 +10,11 @@ from pigpio import pi
 
 
 class Output(): 
-    def __init__(self, output_dict): 
+    def __init__(self, output_dict, timestamp_q): 
 
         self.name = output_dict['name']
+
+        self.timestamp_q = timestamp_q
 
         self.pin = output_dict['pin']
         self._gpio_setup_pin() 
@@ -26,6 +28,7 @@ class Output():
         print("P U L S E")
         # self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         timestamp = time.time()
+        self.timestamp_q.put_item(time.time(), f'pulse sync line ({length})')
         GPIO.output(self.pin, 1)
         time.sleep(length)
         GPIO.output(self.pin, 0)

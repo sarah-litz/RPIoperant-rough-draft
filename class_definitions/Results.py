@@ -25,11 +25,11 @@ from class_definitions.AnalyzeResults import Analysis
 
 class Results(): 
     
-    def __init__(self, csv_input, output_dir): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
+    def __init__(self, csv_input, output_dir, timestamp_q): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
         
         ''' requires that an output file will get found or created when a new Results instance is made'''
         self.filepath = self.generate_output_file(csv_input, output_dir)
-        self.event_queue = Queue()
+        self.timestamp_q = timestamp_q
         self.event_lock = threading.Lock()
         self.writer_thread =  threading.Thread(target=self.monitor_for_event, args=(), daemon=True)
         self.stop_threads = False 
@@ -82,9 +82,9 @@ class Results():
         # called by monitor_for_event only 
         # gets passed an event from the event_queue that gets written to the output file 
         with open(self.filepath, 'a') as file: 
-            round = event[0]
-            name = event[1]
-            time = event[2]
+            round = event.round
+            name = event.event_descriptor
+            time = event.timestamp
             # , name, time = event.split(',')
             writer = csv.writer(file, delimiter = ',')
             writer.writerow([round, name, time]) 
@@ -96,11 +96,11 @@ class Results():
         
         while True: 
             self.event_lock.acquire()
-            event = self.event_queue.get() # if event_queue is empty this will wait for something to be added
+            event = self.timestamp_q.get_item() # if event_queue is empty this will wait for something to be added
             self.event_lock.release()
             # logging.debug('i am monitoring the event queue mmkay')
             self.record_event(event) # function that writes to the output file 
-            self.event_queue.task_done()
+            self.timestamp_q.task_done()
             
     
                 
