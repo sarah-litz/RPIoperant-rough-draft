@@ -69,21 +69,26 @@ class Autoshape(Script):
         #                                                                           # 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.onPressEvents = [
-            lambda: self.pulse_sync_line(length=0.25), 
-            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
+            lambda: self.box.gpio_sync.buzz(    length=self.key_values['pellet_tone_time'], 
+                                                hz=self.key_values['pellet_tone_hz'], 
+                                                buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
-            lambda: self.dispense_pellet(), 
+            lambda: self.box.dispenser.dispense_pellet(), 
             lambda: time.sleep(1),         
-            lambda: self.pins['lever_food'].retract_lever(), 
+            lambda: self.box.food_lever.retract_lever(), 
         ]
 
         self.noPressEvents = [
             lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
-            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: self.box.gpio_sync.buzz(    length=self.key_values['pellet_tone_time'], 
+                                                hz=self.key_values['pellet_tone_hz'], 
+                                                buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
-            lambda: self.dispense_pellet(), 
+            lambda: self.box.dispenser.dispense_pellet(), 
+            lambda: self.box.dispenser.pellet_retrieval(),
             lambda: time.sleep(1),         
-            lambda: self.pins['lever_food'].retract_lever(), 
+            lambda: self.box.food_lever.retract_lever(), 
         ]
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -95,6 +100,7 @@ class Autoshape(Script):
         
         results = self.results # make results instance to give output data so it's recorded&analyzed 
         box = self.box 
+        print("dispenser:", box.dispenser.dispense_pellet())
 
         results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
         self.executor_manager.start() 
@@ -134,7 +140,7 @@ class Autoshape(Script):
         for count in range(0, int(self.key_values['num_rounds'])): 
 
             # ~~ New Round ~~ 
-            self.round = count+1
+            self.new_round() 
             print("round #",self.round)
             
             # pulse 
@@ -154,15 +160,15 @@ class Autoshape(Script):
             # if there is a lever press, the monitor_lever_function automatically pulses/buzzes to indicate this 
             
             # Retract Levers
-            self.thread_pool_submit('retracting lever', box.food_lever.retract_lever)      
+            # self.thread_pool_submit('retracting lever', box.food_lever.retract_lever)      
             
             time_II_start = time.time() # question: not sure wat this gets used for 
             
             time.sleep(delay) # do not give reward until after delay
             
             # Dispense Pellet in response to Lever Press
-            print(f'starting pellet dispensing {self.round}, {time.time() - self.start_time}')
-            self.thread_pool_submit('dispense pellet', box.dispenser.dispense_pellet)
+            # print(f'starting pellet dispensing {self.round}, {time.time() - self.start_time}')
+            # self.thread_pool_submit('dispense pellet', box.dispenser.dispense_pellet)
 
                     
             # ----- TODO: was pellet retrieved?! --------
@@ -178,12 +184,9 @@ class Autoshape(Script):
                 attempts += 1
             
             
-            box.timestamp_q.print_items()
             # Reset Things before start of next round
             box.timestamp_q.finish_writing_items() # ensures that all events get written before beginning next round 
             # results.event_queue.join() # ensures that all events get written before beginning next round 
-            box.timestamp_q.print_items()
-
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
             # results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 

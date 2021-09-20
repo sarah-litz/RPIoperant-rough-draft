@@ -54,7 +54,7 @@ class Script(): # each script that runs gets its own instance of Script created
         
         self.csv_input = csv_input
         self.output_dir = output_dir
-        self.results = Results(csv_input, output_dir, self.box.timestamp_q) # Resutls Class monitors output file tasks
+        self.results = Results(csv_input, output_dir, self.box.timestamp_q) # Results Class monitors output file tasks
         
         # Setup Values of user's Input Information for running Experiment
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
@@ -267,6 +267,9 @@ class Script(): # each script that runs gets its own instance of Script created
     # # # # # # # # # # # # # # # # # # # # # # # # # #
     #               cleanup function                  #
     # # # # # # # # # # # # # # # # # # # # # # # # # #  
+    def new_round(self): 
+        self.round += 1 
+        self.box.timestamp_q.round += 1 
 
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  

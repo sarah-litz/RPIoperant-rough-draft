@@ -18,23 +18,34 @@ import class_definitions.hardware_classes.operant_cage_settings_default as defau
 from class_definitions.hardware_classes.pins_class.Pin import Pin
 
 
-class Pellet(Pin): 
+class Pellet(): 
     # contains attributes and methods that are specific to dispensing a pellet 
     # only the pin 'read_pellet' is made as type Pellet 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
     def __init__(self, dispenser_dict, timestamp_q): 
-        super().__init__(dispenser_dict['name'], dispenser_dict['pin']) # passes the pin name and pin number 
+        #super().__init__(dispenser_dict['name'], dispenser_dict['pin']) # passes the pin name and pin number 
         
+        self.pin = dispenser_dict['pin']
+        self._gpio_setup_pin()
+
+        self.timestamp_q = timestamp_q
+        self.name = dispenser_dict['name']
+
         self.servo = dispenser_dict['servo']
-        self.stop = dispenser_dict['stop']
-        self.forward = dispenser_dict['forward']
+        self.stop_speed = dispenser_dict['stop']
+        self.forward_speed = dispenser_dict['forward']
         self.timeout = dispenser_dict['timeout']
-        self.type = 'Pellet'
+
+
     
+    def _gpio_setup_pin(self): 
+        GPIO.setup(self.pin, GPIO.OUT)
+        GPIO.output(self.pin, 0)
+
     def troughEmpty(self): 
         # returns True if pellet is in trough, False if it is not 
-        return GPIO.input(self.number) # checks the 'read_pellet' pin 
+        return GPIO.input(self.pin) # checks the 'read_pellet' pin 
     
     def pellet_retrieval(self): # watches for pellet retrieval 
         # called on the 'read_pellet' pin 
@@ -82,14 +93,17 @@ class Pellet(Pin):
             print('SERVO FOR THE PELLET IS: ', self.servo_pellet)
             self.servo_pellet.throttle = self.continuous_servo_speeds['fwd'] # start moving servo 
             print('SERVO SPEED FOR THE PELLET IS: ', self.continuous_servo_speeds['fwd'])
-            event_bool, event_timestamp = self.detect_event(timeout=3, edge=GPIO.FALLING) 
+            # event_bool, event_timestamp = self.detect_event(timeout=3, edge=GPIO.FALLING) 
+            channel = GPIO.wait_for_edge(self.pin, GPIO.FALLING, timeout=3000, bouncetime=200)
             self.servo_pellet.throttle = self.continuous_servo_speeds['stop'] # stop moving servo 
-            if event_bool: 
+            if channel: 
                 # a pellet was dispensed  
-                return 'pellet dispensed', event_timestamp, event_bool 
+                self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Pellet Dispensed')
+                return True 
             else: 
                 # timed out, pellet did not get dispensed.
-                return 'pellet dispense timeout', event_timestamp, event_bool 
+                self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Pellet Dispense Failure')
+                return False 
             
             '''timeout = False; start_time = time.time()
             while timeout is False: 

@@ -6,7 +6,7 @@ import time
 
 # third party imports 
 import RPi.GPIO as GPIO
-from pigpio import pi
+import pigpio
 
 
 class Output(): 
@@ -18,6 +18,8 @@ class Output():
 
         self.pin = output_dict['pin']
         self._gpio_setup_pin() 
+
+        self.pi = pigpio.pi()
         
 
     def _gpio_setup_pin(self): 
@@ -35,13 +37,10 @@ class Output():
         return f'pulse sync line ({length})', timestamp, True
 
 
-    def buzz(self, buzz_type): 
-        if self.name != 'speaker': 
-            print(f'attempted a call to the buzz function for the {self.name} pin.')
-            return 
+    def buzz(self, length, hz, buzz_type): 
 
-        print("B U Z Z")
-        if buzz_type is 'round_buzz': 
+        print(f'B U Z Z ({buzz_type})')
+        '''if buzz_type is 'round_buzz': 
             buzz_len =  self.key_values['round_start_tone_time']
             hz =  self.key_values['round_start_tone_hz']
             name = 'round_start_tone'
@@ -63,12 +62,12 @@ class Output():
         
         else: 
             print('the specified buzz_type passed to the buzz funciton does not exist. check for spelling errors?')
-            exit()
+            exit()'''
         
-        pi.set_PWM_dutycycle(self.pin, 255/2)
-        pi.set_PWM_frequency(self.pin, int(hz))
-        time.sleep(buzz_len)
-        pi.set_PWM_dutycycle(self.number, 0) # turn off sound 
+        self.pi.set_PWM_dutycycle(self.pin, 255/2)
+        self.pi.set_PWM_frequency(self.pin, int(hz))
+        time.sleep(int(length))
+        self.pi.set_PWM_dutycycle(self.pin, 0) # turn off sound 
         return 
         
     def cleanup(self): 

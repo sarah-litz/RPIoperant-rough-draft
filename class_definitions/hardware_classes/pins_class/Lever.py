@@ -72,6 +72,18 @@ class Lever():
         self.timestamp_q.put_item(time.time(), f'({self.name}) Retracted')
         return f'{self.name} Retracted', timestamp, True 
     
+    def execute_callback_funcs(self, isPress): 
+        if isPress is True: 
+            callback_funcs = self.onPressEvents 
+        else: 
+            callback_funcs = self.noPressEvents
+
+        for func in callback_funcs: 
+            try: func() 
+            except (NameError): 
+                print(f"Name of func ({func}) not recognized")
+            # except (TypeError): 
+            #    print(f"type error ({inspect.stack()[0][3]}, {inspect.stack()[1][3]})")
 
     def wait_for_n_presses(self, required_presses): 
         
@@ -90,9 +102,10 @@ class Lever():
             print("presses:", presses, "   required_presses:", required_presses)
             self.timestamp_q.put_item(timestamp=time.time(), event_descriptor=f'{self.name} detected {presses} lever presses')
             print(f'{presses} lever presses were detected for {self.name}')
+            self.execute_callback_funcs(isPress=True)
         else: 
             print(f'{self.name} did not detect enough presses within {self.press_timeout} seconds. Detected {presses} out of the required {required_presses} presses.')
-
+            self.execute_callback_funcs(isPress=False)
                 
 
     '''def monitor_lever(self, press_timeout, required_presses=1): 
