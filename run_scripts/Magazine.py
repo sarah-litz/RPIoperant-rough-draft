@@ -54,21 +54,29 @@ class Magazine(Script):
         #                                                                           # 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.onPressEvents = [
-            lambda: self.pulse_sync_line(length=0.25), 
-            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: print('Executing the onPressEvents'),
+            lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
+            lambda: self.box.speaker.buzz(    length=self.key_values['pellet_tone_time'], 
+                                                hz=self.key_values['pellet_tone_hz'], 
+                                                buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
-            lambda: self.dispense_pellet(), 
+            lambda: self.box.dispenser.dispense_pellet(), 
             lambda: time.sleep(1),         
-            lambda: self.pins['lever_food'].retract_lever(), 
+            lambda: self.box.food_lever.retract_lever(), 
+            lambda: self.box.dispenser.pellet_retrieval(), 
         ]
 
         self.noPressEvents = [
-            lambda: self.pulse_sync_line(length=0.25), 
-            lambda: self.buzz(buzz_type='pellet_buzz'),
+            lambda: print('Executing the noPressEvents'), 
+            lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
+            lambda: self.box.speaker.buzz(    length=self.key_values['pellet_tone_time'], 
+                                                hz=self.key_values['pellet_tone_hz'], 
+                                                buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
-            lambda: self.dispense_pellet(), 
-            lambda: time.sleep(1),         
-            lambda: self.pins['lever_food'].retract_lever(), 
+            lambda: self.box.dispenser.dispense_pellet(), 
+            lambda: time.sleep(self.key_values['timeIV']),         
+            lambda: self.box.food_lever.retract_lever(), 
+            lambda: self.box.dispenser.pellet_retrieval(), 
         ]
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -79,30 +87,26 @@ class Magazine(Script):
     '''--------- run_script gets called by MainDriver. In charge of instantiating a Script class '''
     def run_script(self):  # csv_input is the row that corresponds with the current script getting run 
 
-
         results = self.results # make results instanceto give output data so it's recorded&analyzed 
-        
+        box = self.box 
+
         results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
         self.executor_manager.start() # start up thread that handles the results that (executor) future objects produce 
         
-        #CHANGE1: call to new function: configure callback events 
-        # script.configure_callback_events(self.onPressEvents, self.noPressEvents) # set events in case of lever press (or no lever press)
         # make sure all doors are closed
-        doors = ['door_1', 'door_2']
-        for d in doors:
-            print(f'Door State of {d} - isOpen() =', self.doors[d].isOpen())
-            print(f'Current Throttle speed of {d} is: {self.doors[d].servo_door.throttle}')
-            if self.doors[d].isOpen():  
-                self.doors[d].close_door() 
+        doors = [box.door_1]
+        for door in doors: 
+            if door.isOpen(): 
+                door.close_door(door.state_button)
         
-        levers = ['lever_food', 'lever_door_1', 'lever_door_2']
-        for l in levers: # create thread for fulltime monitoring of each lever
-            self.pins[l].onPressEvents = self.onPressEvents
-            self.pins[l].noPressEvents = self.noPressEvents
-            self.executor.submit(self.pins[l].monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func=self.lever_event_callback)
+        # configure onPressEvents and noPressEvents for the levers
+        leverlist=[box.food_lever,box.door_1_lever,box.door_2_lever]
+        for lever in leverlist: 
+            lever.press_timeout = self.key_values['timeII']
+            lever.onPressEvents = self.onPressEvents 
+            lever.noPressEvents = self.noPressEvents
 
-        self.executor.submit(self.pulse_sync_line, length=0.5, round=self.round) # Pulse Event: Experiment Start 
-        
+        self.thread_pool_submit('Experiment Start (Pulse)', box.gpio_sync.pulse_sync_line, length=0.5, descriptor='Experiment Start')
         '''________________________________________________________________________________________________________________________________________'''
         
         print(f"range for looping: {[i for i in range(1, self.key_values['num_rounds']+1,1)]}")
@@ -111,52 +115,31 @@ class Magazine(Script):
         for count in range(0, int(self.key_values['num_rounds'])): 
 
             # ~~ New Round ~~ 
-            self.round = count+1
+            self.new_round()
             print("round #",self.round)
 
             # pulse 
-            self.thread_pool_submit('new round', self.pulse_sync_line, length=0.1, round=self.round) # Pulse Event: New Round
+            self.thread_pool_submit('New Round (Pulse)', box.gpio_sync.pulse_sync_line, length=0.1, descriptor=f'New Round (#{self.round})') # Pulse Event: New Round
             
-            self.executor.submit(self.buzz, 'round_buzz') # play sound for round start (type: 'round_buzz')
+            # buzz
+            self.thread_pool_submit('New Round (Buzz)', box.speaker.buzz,  
+                                        length=self.key_values['round_start_tone_time'], 
+                                        hz=self.key_values['round_start_tone_hz'], 
+                                        buzz_type='round_buzz' )
 
             # extend food lever
-            self.thread_pool_submit('levers out', self.pins['lever_food'].extend_lever)
+            self.thread_pool_submit('levers out', box.food_lever.extend_lever)
 
-            
-            # begin monitoring 
-            # script.pins['lever_food'].monitor_lever(required_presses=1, press_timeout=script.key_values['timeII'])
-            self.pins['lever_food'].monitor_lever(press_timeout=self.key_values['timeII'],  # change back to 'timeII' press timeout value 
-                                                    required_presses=1) 
-            ''', 
-                                                    callbacks = [
-                                                        lambda: script.pulse_sync_line(round=script.round, length=0.25), # lambda round=script.round, length=0.25: script.pulse_sync_line(round=script.round, length=0.25), 
-                                                        lambda: script.buzz(buzz_type='pellet_buzz')
-                                                    ])'''
-
-
-
+            # monitor for a lever press             
+            # self.thread_pool_submit('waiting for 2 lever pressees', box.food_lever.wait_for_n_presses, required_presses=2) # diff than syntax in autoshape (just to see what happens)
+            box.food_lever.wait_for_n_presses(required_presses=2)
 
             time.sleep(self.key_values['timeII']) # pause while we are waiting on lever press 
             
             time_II_start = time.time() # question: not sure wat this gets used for 
-    
-            # Dispense Pellet in response to Lever Press
-            # print(f'starting pellet dispensing {script.round}, {time.time() - script.start_time}')
-            # script.thread_pool_submit('dispense pellet', script.pins['read_pellet'].dispense_pellet)
+               
 
-
-            
-            # Retract Levers
-            time.sleep(self.key_values['timeIV']) # pause before retracting lever 
-            self.thread_pool_submit('retracting lever', self.pins['lever_food'].retract_lever)      
-
-            
-            
-            # ----- TODO: was pellet retrieved?! --------
-            self.thread_pool_submit('pellet retrieval', self.pins['read_pellet'].pellet_retrieval)
-
-            
-        
+            # TODO: make this wait on futures into a funciton w/in the ScriptClass 
             # wait on futures to finish running 
             attempts = 0
             print("script futures: ", self.futures)
@@ -167,10 +150,8 @@ class Magazine(Script):
                 attempts += 1
 
             # Reset Stuff before next round starts
-            results.event_queue.join() # ensures that all events get written before beginning next round 
+            box.timestamp_q.finish_writing_items()             
             
-            
-            # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
 
         
             if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
@@ -178,7 +159,7 @@ class Magazine(Script):
         
         # TODO: analyze and cleanup
         # results.analysis 
-        results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
+        # results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
         # cleanup runs in finally statement (in the run() function)
         return True 
 
@@ -208,7 +189,7 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         
     else: 
         print("Magazine script has finished running all rounds successfully!")
-        return script.pins
+        return True 
 
     finally: 
         # runs cleanup() no matter what reason there was for exiting 

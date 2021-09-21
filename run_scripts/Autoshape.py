@@ -70,18 +70,19 @@ class Autoshape(Script):
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.onPressEvents = [
             lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
-            lambda: self.box.gpio_sync.buzz(    length=self.key_values['pellet_tone_time'], 
+            lambda: self.box.speaker.buzz(    length=self.key_values['pellet_tone_time'], 
                                                 hz=self.key_values['pellet_tone_hz'], 
                                                 buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
-            lambda: self.box.dispenser.dispense_pellet(), 
+            lambda: self.box.dispenser.dispense_pellet(),
+            lambda: self.box.dispenser.pellet_retrieval(),  
             lambda: time.sleep(1),         
             lambda: self.box.food_lever.retract_lever(), 
         ]
 
         self.noPressEvents = [
             lambda: self.box.gpio_sync.pulse_sync_line(length=0.25), 
-            lambda: self.box.gpio_sync.buzz(    length=self.key_values['pellet_tone_time'], 
+            lambda: self.box.speaker.buzz(    length=self.key_values['pellet_tone_time'], 
                                                 hz=self.key_values['pellet_tone_hz'], 
                                                 buzz_type='pellet_buzz'),
             lambda: time.sleep(1), 
@@ -100,7 +101,6 @@ class Autoshape(Script):
         
         results = self.results # make results instance to give output data so it's recorded&analyzed 
         box = self.box 
-        print("dispenser:", box.dispenser.dispense_pellet())
 
         results.writer_thread.start() # start up the writer thread to run in background until experiment is over 
         self.executor_manager.start() 
@@ -119,19 +119,15 @@ class Autoshape(Script):
         if box.door_1.isOpen():  # returns True if door is open, False if it is not open aka is closed 
             box.door_1.close_door(box.door_1.state_button) 
         
-        
-        # dedicate 3 worker threads to monitoring a lever for lever presses thruout 
+        # Set the levers' PressEvents defined at the top of this module 
         leverlist=[box.food_lever,box.door_1_lever,box.door_2_lever]
         for lever in leverlist: 
             lever.press_timeout = self.key_values['timeII']
             lever.onPressEvents = self.onPressEvents 
             lever.noPressEvents = self.noPressEvents 
-            # self.executor.submit(lever.monitor_lever_continuous, self.onPressEvents, self.noPressEvents, callback_func = self.lever_event_callback)
 
-
-
-        self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5) # Pulse Event: Experiment Start 
-        
+        # self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5, descriptor='Experiment Start') # Pulse Event: Experiment Start 
+        self.thread_pool_submit('Experiment Start (Pulse)', box.gpio_sync.pulse_sync_line, length=0.5, descriptor='Experiment Start')
         '''________________________________________________________________________________________________________________________________________'''
         
         print(f"range for looping: {[i for i in range(1, self.key_values['num_rounds']+1,1)]}")
@@ -141,14 +137,18 @@ class Autoshape(Script):
 
             # ~~ New Round ~~ 
             self.new_round() 
+            # self.executor.submit(box.gpio_sync.pulse_sync_line, length=0.5, descriptor=f"New Round (#{self.round})")
             print("round #",self.round)
             
             # pulse 
-            self.thread_pool_submit('new round', box.gpio_sync.pulse_sync_line, length=0.1) # Pulse Event: New Round
+            self.thread_pool_submit('New Round (Pulse)', box.gpio_sync.pulse_sync_line, length=0.1, descriptor=f'New Round (#{self.round})') # Pulse Event: New Round
 
             # buzz
-            self.executor.submit(box.speaker, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
-
+            # self.executor.submit(box.speaker, buzz_type = 'round_buzz') # play sound for round start (type: 'round_buzz')
+            self.thread_pool_submit('New Round (Buzz)', box.speaker.buzz,  
+                                        length=self.key_values['round_start_tone_time'], 
+                                        hz=self.key_values['round_start_tone_hz'], 
+                                        buzz_type='round_buzz' )
             # extend food lever
             self.thread_pool_submit('levers out', box.food_lever.extend_lever)
 
@@ -179,7 +179,7 @@ class Autoshape(Script):
             print("script futures: ", self.futures)
             while attempts < 5 : 
                 for future,name in self.futures: 
-                    print(f'(Future Name) {name} (Running) {future.running()}')
+                    print(f'(func name){name} (running){future.running()}')
                     time.sleep(3)
                 attempts += 1
             
@@ -191,7 +191,8 @@ class Autoshape(Script):
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )
             # results.analysis() # TODO this should possibly be moved to the end of all rounds for each experiment? 
         
-            self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round
+            if self.round < int(self.key_values['num_rounds']): # skips countdown timer if final round just finished
+                self.countdown_timer(self.key_values['round_time'], event='next round')  # countdown until the start of the next round        
         
         # TODO: analyze and cleanup
         # results.analysis 

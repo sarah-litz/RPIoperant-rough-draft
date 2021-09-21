@@ -26,20 +26,22 @@ class Output():
         GPIO.setup(self.pin, GPIO.OUT)
     
 
-    def pulse_sync_line(self, length): 
-        print("P U L S E")
+    def pulse_sync_line(self, length, descriptor=None): 
+        # print("P U L S E")
         # self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
         timestamp = time.time()
         self.timestamp_q.put_item(time.time(), f'pulse sync line ({length})')
         GPIO.output(self.pin, 1)
         time.sleep(length)
         GPIO.output(self.pin, 0)
+        if descriptor is not None: 
+            return f'pulse sync line, {descriptor} ({length})', timestamp, True
         return f'pulse sync line ({length})', timestamp, True
 
 
     def buzz(self, length, hz, buzz_type): 
 
-        print(f'B U Z Z ({buzz_type})')
+        # print(f'B U Z Z ({buzz_type})')
         '''if buzz_type is 'round_buzz': 
             buzz_len =  self.key_values['round_start_tone_time']
             hz =  self.key_values['round_start_tone_hz']
@@ -66,9 +68,11 @@ class Output():
         
         self.pi.set_PWM_dutycycle(self.pin, 255/2)
         self.pi.set_PWM_frequency(self.pin, int(hz))
+        timestamp = time.time()
+        self.timestamp_q.put_item(timestamp, f'{buzz_type} (length: {length})')
         time.sleep(int(length))
         self.pi.set_PWM_dutycycle(self.pin, 0) # turn off sound 
-        return 
+        return f'Buzz, {buzz_type}', timestamp, True
         
     def cleanup(self): 
         pass 

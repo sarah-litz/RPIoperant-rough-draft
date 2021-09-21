@@ -8,9 +8,11 @@ from queue import Queue
 
 class Timestamp(): 
     def __init__(self, timestamp, event_descriptor, round): 
-        self.timestamp = timestamp
-        self.event_descriptor = event_descriptor
-        self.round = round 
+        
+        self.timestamp = timestamp # time that the event occurred at (gets converted to time since round start)
+        self.event_descriptor = event_descriptor # string that describes what the event is 
+        self.round = round # round number that event occurred during 
+        
         
 
 

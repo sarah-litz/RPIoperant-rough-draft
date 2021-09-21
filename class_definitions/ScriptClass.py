@@ -115,11 +115,10 @@ class Script(): # each script that runs gets its own instance of Script created
             next element. Repeat until the round has finished. '''
             
             for future,name in (self.futures): 
-                if future.done(): 
-                    self.futures.remove([future,name]) # remove tuple at this index 
-                    # self.futures.remove(future) # remove this future from the list
-                    event_name, timestamp, ifEvent = future.result() # get result
-                    print(f'Future Result: {self.round}, {event_name}, {timestamp-self.start_time}')
+                if future.done(): # Check to see if future is done 
+                    self.futures.remove([future,name]) # remove the future tuple from list of futures
+                    event_name, timestamp, ifEvent = future.result() # get future's result
+                    print(f'Future Result: {event_name}')
                     
                     #self.results.event_queue.put([self.round, event_name, timestamp-self.start_time]) 
                 else: 
@@ -134,7 +133,7 @@ class Script(): # each script that runs gets its own instance of Script created
             else: 
                 logging.debug('some futures were not able to finish: ')
                 for future,name in self.futures: 
-                    logging.debug(f'(Future Name) {name} (Running) {future.running()}')
+                    logging.debug(f'(Future Name:){name} (Is Running:){future.running()}')
                 return False 
 
 

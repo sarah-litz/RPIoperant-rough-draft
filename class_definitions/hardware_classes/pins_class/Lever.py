@@ -64,13 +64,14 @@ class Lever():
         timestamp = time.time()
         time.sleep(0.1)
         self.servo.angle = extend 
-        return 'levers out', timestamp, True
+        self.timestamp_q.put_item(timestamp, f'({self.name} lever) Lever Extended')
+        return f'{self.name} lever extended', timestamp, True
         
     def retract_lever(self):         
         timestamp = time.time() 
         self.servo.angle = self.retracted 
-        self.timestamp_q.put_item(time.time(), f'({self.name}) Retracted')
-        return f'{self.name} Retracted', timestamp, True 
+        self.timestamp_q.put_item(timestamp, f'({self.name} lever) Lever Retracted')
+        return f'{self.name} lever retracted', timestamp, True 
     
     def execute_callback_funcs(self, isPress): 
         if isPress is True: 
@@ -100,12 +101,15 @@ class Lever():
         # check reason for breaking out of while loop 
         if presses >= required_presses: 
             print("presses:", presses, "   required_presses:", required_presses)
-            self.timestamp_q.put_item(timestamp=time.time(), event_descriptor=f'{self.name} detected {presses} lever presses')
+            timestamp=time.time()
+            self.timestamp_q.put_item(timestamp=timestamp, event_descriptor=f'{presses} Presses Detected ({self.name} lever)')
             print(f'{presses} lever presses were detected for {self.name}')
             self.execute_callback_funcs(isPress=True)
+            return 'Lever Presses', timestamp, True 
         else: 
             print(f'{self.name} did not detect enough presses within {self.press_timeout} seconds. Detected {presses} out of the required {required_presses} presses.')
             self.execute_callback_funcs(isPress=False)
+            return 'Lever Presses', time.time(), False
                 
 
     '''def monitor_lever(self, press_timeout, required_presses=1): 
