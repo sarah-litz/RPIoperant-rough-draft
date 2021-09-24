@@ -45,6 +45,9 @@ class Pellet():
 
     def troughEmpty(self): 
         # returns True if pellet is in trough, False if it is not 
+        print("Dispenser Pin Number:", self.pin)
+        print ('TROUGH EMPTY VALUE: ')
+        print (GPIO.input(self.pin))
         return GPIO.input(self.pin) # checks the 'read_pellet' pin 
     
     def pellet_retrieval(self): # watches for pellet retrieval 
@@ -85,6 +88,7 @@ class Pellet():
     def dispense_pellet(self): 
         
         if not self.troughEmpty(): # there is already a pellet, do not dispense
+            self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Skipped Pellet Dispense; Trough Not Empty')
             return 'pellet already in trough; skipped dispense', time.time(), False   
         else: # dispense pellet 
             

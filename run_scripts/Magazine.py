@@ -18,13 +18,6 @@ from class_definitions.ScriptClass import Script # import Script # import the pa
 
 
 
-# Pin Values: pair a key with a raspberry pi number so we can access a GPIO pin through a descriptive key 
-def get_pin_values():  # Pin Values: leave this function as is if default pin values are OK. 
-    ''' PIN VALUES DEFINED HERE: if left empty, then default values (from operant_cage_settings_defaults) are used. '''
-    pins={} # If diff pin values are desired, then enter values here. 
-    return pins 
-
-
 # Key Values: sets important values that changes the timing/schedule of the script
 def get_key_values(): 
     ''' DEFAULT KEY VALUES DEFINED HERE '''
@@ -44,8 +37,8 @@ def get_key_values():
 
 class Magazine(Script): 
 
-    def __init__(self, csv_input, output_dir, key_values, pin_obj_dict=None, pin_values=None): 
-        super().__init__(csv_input, output_dir, key_values, pin_obj_dict, pin_values)
+    def __init__(self, csv_input, output_dir, key_values): 
+        super().__init__(csv_input, output_dir, key_values)
 
         
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -164,14 +157,13 @@ class Magazine(Script):
         return True 
 
 
-def run(csv_input, output_dir, pin_obj_dict=None): 
+def run(csv_input, output_dir): 
     
     finalClean = False 
     try: 
 
         key_values = get_key_values()
-        pin_values = get_pin_values()
-        script = Magazine(csv_input, output_dir, key_values, pin_obj_dict, pin_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
+        script = Magazine(csv_input, output_dir, key_values) # to change pin values, add values to the function get_pin_values, and then pass get_pin_values() as another argument to Script class. 
 
         script.run_script()
         
@@ -180,7 +172,7 @@ def run(csv_input, output_dir, pin_obj_dict=None):
         while True: 
             cont = input("do you want to run the remaining scripts? (y/n)")
             if cont is 'y': 
-                return script.pins
+                return True
             elif cont is 'n': 
                 finalClean = True 
                 sys.exit(0)

@@ -103,7 +103,6 @@ def startup():
     scriptList = inputdf['script'].copy().tolist() 
     print(scriptList)
     count = 0 # counter to loop thru script list 
-    pin_object_dict = None # variable to pass pin object dictionary from script to script so we dont setup mutliple times 
     # while(len(scriptList) > 0): # need to comment this out for testing so doesn't end up in a endless loop. But will use this while loop instead of the foor loop later on. 
     for x in scriptList:
          
@@ -124,7 +123,7 @@ def startup():
     
                 # get current row of dataframe 
                 csv_row = inputdf.loc[count]
-                pin_object_dict = module.run(csv_row, outputdir, pin_object_dict)
+                module.run(csv_row, outputdir)
 
 
         else: 
