@@ -46,32 +46,27 @@ class Pin(): # class for a single pin
         self.pin_event_queue = Queue()
         self.type = 'Pin'
     
-    ''' --------- Private Setup Methods --------------'''
-    '''def type_setup(self): 
-        if 'door' in self.name:
-                type = 'door'
-        
-        return type''' 
+
     
     def gpio_setup(self): # setup with GPIO and create new instance based on type where necessary. (accessed thru self.type_instance)
        
         # GPIO setup 
         if 'lever' in self.name or 'switch' in self.name: # QUESTION/TODO: or 'door' in self.name:
-            print(f'{self.name}|{self.number}: IN')
+            # print(f'{self.name}|{self.number}: IN')
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO 
         elif 'read' in self.name:
-            print(f'{self.name}|{self.number}: IN')
+            # print(f'{self.name}|{self.number}: IN')
             GPIO.setup(self.number, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             return GPIO
         elif 'led' in self.name or 'dispense' in self.name :
             GPIO.setup(self.number, GPIO.OUT)
             GPIO.output(self.number, 0)
-            print(f'{self.name}|{self.number}: OUT')
+            # print(f'{self.name}|{self.number}: OUT')
             return GPIO
         else:
             GPIO.setup(self.number, GPIO.OUT)
-            print(f'{self.name}|{self.number}: OUT')
+            # print(f'{self.name}|{self.number}: OUT')
             return GPIO
     
  

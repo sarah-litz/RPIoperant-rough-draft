@@ -121,8 +121,8 @@ def startup():
                 spec.loader.exec_module(module)
     
                 # get current row of dataframe 
-                csv_row = inputdf.loc[count]
-                pin_object_dict = module.run(csv_row, outputdir, pin_object_dict)
+                # csv_row = inputdf.loc[count]
+                pin_object_dict = module.run(inputdf, inputfp, outputdir, csv_row_num=count, pin_obj_dict=pin_object_dict)
 
 
         else: 
