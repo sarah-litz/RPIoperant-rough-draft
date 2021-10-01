@@ -108,7 +108,7 @@ class Magazine(Script):
         for count in range(0, int(self.key_values['num_rounds'])): 
 
             # ~~ New Round ~~ 
-            self.new_round()
+            self.new_round() # updates the round num and round start time in the timestamp q
             print("round #",self.round)
 
             # pulse 

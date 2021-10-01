@@ -217,7 +217,7 @@ def run(csv_input, output_dir):
         
     else: 
         print("Autoshape script has finished running all rounds successfully!")
-        return script.pins
+        return True 
     finally: 
         # runs cleanup() no matter what reason there was for exiting 
         try: 

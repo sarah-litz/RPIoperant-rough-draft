@@ -9,7 +9,7 @@ from queue import Queue
 class Timestamp(): 
     def __init__(self, timestamp, event_descriptor, round): 
         
-        self.timestamp = timestamp # time that the event occurred at (gets converted to time since round start)
+        self.timestamp = "{:.2f}".format(timestamp) # format time to 2 decimal points 
         self.event_descriptor = event_descriptor # string that describes what the event is 
         self.round = round # round number that event occurred during 
         
@@ -31,6 +31,7 @@ class TimestampQueue():
     
     def get_item(self): 
         return self.recorded_items.get()
+
     def task_done(self): 
         self.recorded_items.task_done() 
 

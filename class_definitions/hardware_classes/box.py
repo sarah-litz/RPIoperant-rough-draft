@@ -5,7 +5,7 @@ from .pins_class.Lever import Lever
 from .pins_class.Pellet import Pellet
 from .pins_class.Button import Button
 from .pins_class.Output import Output
-from .Timestamp import TimestampQueue
+from ..Timestamp import TimestampQueue
 from . import operant_cage_settings_default as default_operant_settings
 # import Beam
 

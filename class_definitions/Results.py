@@ -50,15 +50,20 @@ class Results():
         fname = fdate+f'_{script_name}_vole_{vole}.csv'
 
         ''' set filepath '''
-        if output_dir != None: # check if user specified the directory 
-            fp = os.path.join(output_dir, fname)  
-        else: 
-            # DEFAULT DIRECTORY 
-            defaultfp = Path('defaultfp') 
+        if output_dir == None: # check if user specified the directory 
+            output_dir = Path('defaultfp') 
+            
+        # if directory does not exist, then create it
+        output_dir.mkdir(parents=True, exist_ok=True) # mkdir only makes directory if it does not exist 
+        fp = os.path.join(output_dir, fname) # sets full filepath including generated filename 
 
-            # if it does not exist, then create it
-            defaultfp.mkdir(parents=True, exist_ok=True) # makes directory if it does not exist 
-            fp = os.path.join(defaultfp, fname)
+        # if file is already in use, iterate count until we get a filename that is not already in use 
+        count = 1
+        while os.path.isfile(fp):
+            count += 1  
+            print(f'filepath already in use, adding version{count} to file name')
+            fname = fdate+f'_{script_name}_vole_{vole}_version{count}.csv'
+            fp = os.path.join(output_dir, fname)
         
         ''' open file and write header with general experiment information '''
         with open(fp, 'a') as output_file: # output_file is the new file object 

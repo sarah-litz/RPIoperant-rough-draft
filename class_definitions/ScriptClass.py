@@ -199,6 +199,7 @@ class Script(): # each script that runs gets its own instance of Script created
     def new_round(self): 
         self.round += 1 
         self.box.timestamp_q.round += 1 
+        self.box.timestamp_q.start_time = time.time() 
 
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  

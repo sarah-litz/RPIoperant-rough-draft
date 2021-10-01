@@ -77,7 +77,7 @@ buttons =[
           
           {'name' : 'door_1',
            'function' : 'close',
-           'pin' : 25
+           'pin' : 24
           },
           
           {'name' : 'door_1',

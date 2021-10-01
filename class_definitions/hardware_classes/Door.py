@@ -42,11 +42,16 @@ class Door():
         self.open_override = door_buttons['open']
         self.close_override = door_buttons['close']
         self.state = door_buttons['state']
-        
-        '''self.override_open_pin = door_dict['override_open_pin']
-        self.override_close_pin = door_dict['override_close_pin']
-        self.state_pin = door_dict['state_pin']'''
-        
+    
+        # Startup threads for the override buttons 
+        # manually open a door with 'open_override' and close with 'close_override'
+        self.stop_threads = False  
+        self.t1 = threading.Thread( target = self.open_override.monitor_for_button_press, daemon=True )
+        self.t2 = threading.Thread( target = self.close_override.monitor_for_button_press, daemon=True )
+        self.check_threads = threading.Thread( target = self.monitor_override_buttons, daemon=True )
+        self.t1.start() 
+        self.t2.start()
+        self.check_threads.start() 
     
         # Servo Setup 
 
@@ -75,36 +80,39 @@ class Door():
     
     def isOpen(self): # check if door is open 
         
-        if self.state_button: 
-            False # door closed 
+        if self.state: 
+            return False # door closed 
         else: 
-            True # door open 
+            return True # door open 
 
     
         
     def open_door(self):
         ''' opens the door of the Lever object that calls this method '''
         ''' if we want to open a list of doors, will need to call this method for each object in the list '''
-        if self.isOpen(): 
+        if self.state is True: 
             # door is already open 
             print(f'{self.name} was already open')
             return
         
-        if self.close_override is True: # override button was pressed, exit. 
-            print(f'open {self.name} stopped due to override!')
+        if self.close_override.flag is True: # override button was pressed, exit. 
+            self.servo.throttle = self.stop_speed
+            print(f'open {self.name} stopped due to override! Closing door now.')
+            self.close_door() 
             return 
         
-        self.servo.throttle =  self.open_speed
-        
         start = time.time()
+        self.servo.throttle =  self.open_speed
 
         while time.time() < ( start + self.open_time ): # and not self.door_override[door_id]:
             #wait for the door to open -- we just have to assume this will take the exact same time of <open_time> each time, since we don't have a switch to monitor for if it opens all the way or not. 
-            if self.close_override is True: # check if override button has been pressed during this time 
-                print(f'open {self.name} stopped due to override!')
+            if self.close_override.flag is True: # check if override button has been pressed during this time 
+                self.servo.throttle = self.stop_speed
+                print(f'open {self.name} stopped due to override! Closing door now.')
+                self.close_door() 
                 return 
-            # else: 
-            #     time.sleep(0.05)
+            else: 
+                time.sleep(0.005)
 
         #door should be open when we hit this point 
         self.servo.throttle = self.stop_speed
@@ -122,23 +130,33 @@ class Door():
 
             
     
-    def close_door(self, state_button): 
+    def close_door(self): 
 
         #check if doors are already closed
-        if not state_button: # False for closed door, True for open door 
+        if self.isOpen() == False: # False for closed door, True for open door 
             print(f'{self.name} is already closed')
             return 
         
-        # TODO: check for door override button press 
+        if self.open_override.flag is True: 
+            self.servo.throttle = self.stop_speed 
+            print(f'close {self.name} stopped due to override! Opening door now.')
+            self.open_door() 
+            return 
         
         start = time.time()
         self.servo.throttle = self.close_speed
         print('isOpen: ', self.isOpen())
         print('time: ', time.time()-start)
-        while state_button and time.time()-start < TIMEOUT:  
-            pass 
-            # repeatedly check the state switch pin to see if the door has shut
-            # check each iteration to make sure door has not been overriden by button
+
+        while self.isOpen() and time.time()-start < TIMEOUT:  
+            
+            if self.open_override.flag is True: 
+                self.servo.throttle = self.stop_speed 
+                print(f'close {self.name} stopped due to override! Opening door now.')
+                self.open_door() 
+                return 
+            else: 
+                time.sleep(0.005)
 
             #if not GPIO.input(self.state_switch.number): 
                 # door shut successfully, stop the door 
@@ -147,7 +165,7 @@ class Door():
                 
         self.servo.throttle = self.stop_speed
         # check the reason for exiting the while loop: (either door actually closed, or reached timeout)
-        if not state_button: # door successfully closed 
+        if self.isOpen() is False: # door successfully closed 
             print(f'{self.name} should be closed now! ')
         else: 
             print(f'ah crap, door {self.name} didnt close!') 
@@ -161,17 +179,23 @@ class Door():
     
     def monitor_override_buttons(self): 
         '''monitor pins for override open and override close'''
-        
+        # NOT IN USE RIGHT NOW! 
         while not self.stop_threads: 
             #pullup swtich pins will be 0/False when pressed
-            if GPIO.input(self.override_open_pin) == False:
-                self.open_override = True 
-                self.servo_door.throttle = self.open_speed
-            else:
-                self.open_override = False
-                self.servo_door.throttle = self.stop_speed
+            if self.open_override.flag is True: 
+                self.open_door() 
+                self.open_override.flag = False # reset flag 
+            
+
+            if self.close_override.flag is True: 
+                self.close_door() 
+                self.close_override.flag = False # reset flag 
+            
+            time.sleep(0.025)
+        
+
                 
-            if GPIO.input(self.override_open_pin) == False: 
+            '''if GPIO.input(self.override_open_pin) == False: 
                 self.close_override = True 
                 self.servo_door.throttle = self.close_speed
             else:
@@ -180,27 +204,26 @@ class Door():
             
             #this might not really matter, but good to address the case anyway
             if GPIO.input(self.override_open_pin) == False and GPIO.input(self.override_open_pin) == False: 
-                self.servo_door.throttle = self.stop_speed
-            time.sleep(0.05)
+                self.servo_door.throttle = self.stop_speed'''
+        
+        # When stop threads is set to true, signal the button threads to stop monitoring as well 
+        self.open_override.stop_monitoring() 
+        self.close_override.stop_monitoring() 
 
             
     def cleanup(self): 
         # QUESTION: should we ensure doors are open and/or closed when we finish?? 
 
-        
+        # stop monitoring button presses (threads that are monitoring this finish last round of function and exit)
+        self.stop_threads = True 
+        #self.open_override.stop_monitoring()
+        #self.close_override.stop_monitoring()
         '''if self.isOpen(): 
             self.close_door()'''
 
-        # kill threads
-        '''self.stop_threads = True 
-        GPIO.remove_event_detect(self.override_open_switch.number)
-        GPIO.remove_event_detect(self.override_close_switch.number)'''
-
-
-        # kill threads 
         if self.isOpen(): 
             self.close_door() 
-        self.stop_threads = True 
+        # self.stop_threads = True 
 
         # emergency stop: 
         self.servo.throttle = self.stop_speed  # force shutoff if any servos are left moving

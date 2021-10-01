@@ -74,7 +74,7 @@ class Test(Script):
 
         print(result)
 
-        pin_lst = [box.dispenser.pin, box.food_lever.pin]
+        pin_lst = [box.dispenser.pin, box.food_lever.pin, box.door_1.open_override.pin, box.door_1.close_override.pin]
         self.print_pin_status(pin_lst)
         return 
     
