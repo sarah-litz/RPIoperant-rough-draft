@@ -179,7 +179,7 @@ class Autoshape(Script):
             
             
             # Reset Things before start of next round
-            box.timestamp_q.finish_writing_items() # ensures that all events get written before beginning next round 
+            box.timestamp_manager.finish_writing_items() # ensures that all events get written before beginning next round 
             # results.event_queue.join() # ensures that all events get written before beginning next round 
             
             # TODO: reset before next round?? ( reset vals where necessary, shut off servos and stuff )

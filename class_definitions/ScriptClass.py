@@ -28,11 +28,11 @@ import RPi.GPIO as GPIO
 
 # Local imports 
 from class_definitions.Results import Results # manages output data 
-import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
+'''import class_definitions.hardware_classes.operant_cage_settings_default as default_operant_settings
 from class_definitions.hardware_classes.pins_class.Pin import Pin # import pin class
 from class_definitions.hardware_classes.pins_class.Lever import Lever # subclass to Pin
 from class_definitions.hardware_classes.pins_class.Pellet import Pellet # subclass to Pin
-from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins
+from class_definitions.hardware_classes.Door import Door # built on top of multiple Pins'''
 from class_definitions.hardware_classes.box import Box 
 
 # Globals 
@@ -54,7 +54,7 @@ class Script(): # each script that runs gets its own instance of Script created
         
         self.csv_input = csv_input
         self.output_dir = output_dir
-        self.results = Results(csv_input, output_dir, self.box.timestamp_q) # Results Class monitors output file tasks
+        self.results = Results(csv_input, output_dir, self.box.timestamp_manager) # Results Class monitors output file tasks
         
         # Setup Values of user's Input Information for running Experiment
         self.key_values = self.change_key_values(key_values, csv_input['key_val_changes'])
@@ -64,9 +64,9 @@ class Script(): # each script that runs gets its own instance of Script created
         # Experiment Information 
         self.round = 0  
         self.start_time = time.time()
-        # Update Experiemnt Information in timestamp_q
-        self.box.timestamp_q.round = self.round 
-        self.box.timestamp_q.round_start_time = self.start_time
+        # Update Experiemnt Information in timestamp_manager
+        self.box.timestamp_manager.round = self.round 
+        self.box.timestamp_manager.round_start_time = self.start_time
         
         # Thread Pool 
         self.executor = ThreadPoolExecutor(max_workers=20) 
@@ -159,8 +159,6 @@ class Script(): # each script that runs gets its own instance of Script created
     def print_pin_status(self, pins):
     
         
-            
-
             print("\033c", end="")
             if len(pins) > 1: 
                 sorted_pins = sorted(pins)
@@ -198,8 +196,8 @@ class Script(): # each script that runs gets its own instance of Script created
     # # # # # # # # # # # # # # # # # # # # # # # # # #  
     def new_round(self): 
         self.round += 1 
-        self.box.timestamp_q.round += 1 
-        self.box.timestamp_q.start_time = time.time() 
+        self.box.timestamp_manager.round += 1 
+        self.box.timestamp_manager.start_time = time.time() 
 
     def cleanup(self, finalClean = False): 
         # make sure all doors closed and no servos are running still  

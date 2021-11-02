@@ -87,7 +87,7 @@ class Magazine(Script):
         self.executor_manager.start() # start up thread that handles the results that (executor) future objects produce 
         
         # make sure all doors are closed
-        doors = [box.door_1]
+        doors = [box.door_1]  
         for door in doors: 
             if door.isOpen(): 
                 door.close_door(door.state_button)
@@ -143,7 +143,7 @@ class Magazine(Script):
                 attempts += 1
 
             # Reset Stuff before next round starts
-            box.timestamp_q.finish_writing_items()             
+            box.timestamp_manager.finish_writing_items()             
             
 
         

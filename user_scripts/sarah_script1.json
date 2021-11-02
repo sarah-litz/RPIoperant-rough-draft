@@ -1,0 +1,7 @@
+
+[
+    { "action":"close door", "object":"door_1" },
+    { "action":"wait", "arguments":[5] }, 
+    { "action":"extend lever", "object":"lever_1" }, 
+    { "action":"wait for press", "object":"lever_1", "arguments":[4] }
+]

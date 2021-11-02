@@ -1,0 +1,16 @@
+
+
+~~ text file that would get converted to JSON ~~ 
+~~ might be way to have comments this way? Plus syntax might be easier to understand? 
+    however, converting from txt to JSON might just be adding extra complications that are not worth it? 
+    Either way, think it might be easier to first get the JSON version working, and then can eventually switch to doing it as a txt file
+        if it seems like something that would be worth doing. 
+~~ 
+
+
+[
+    { "action":"close door", "object":"door_1" },
+    { "action":"wait", "arguments":[5] }, 
+    { "action":"extend lever", "object":"lever_1" }, 
+    { "action":"wait for press", "object":"lever_1", "arguments":[4] }
+]

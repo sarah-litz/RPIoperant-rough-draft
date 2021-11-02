@@ -1,6 +1,9 @@
 
 #!/usr/bin/python3
 
+# Local Imports 
+from ...Timestamp import Timestamp 
+
 # standard lib imports 
 import time 
 
@@ -9,9 +12,9 @@ import RPi.GPIO as GPIO
 
 
 class Button(): 
-    def __init__(self, button_dict, timestamp_q): 
+    def __init__(self, button_dict, timestamp_manager): 
 
-        self.timestamp_q = timestamp_q 
+        self.timestamp_manager = timestamp_manager 
         
         self.door = button_dict['name']
         self.function = button_dict['function']
@@ -29,12 +32,16 @@ class Button():
 
     def monitor_for_button_press(self): 
         print('______________Monitoring for Button Press___________________________')
+        
         self.flag = False 
         GPIO.add_event_detect(self.pin, GPIO.FALLING, bouncetime=200)
         while True: 
             if GPIO.event_detected(self.pin): 
                 print('override button press detected!!')
-                self.timestamp_q.put_item(time.time(), f'override {self.function} button for {self.door} pressed')
+                ## Since this is continuously looping for all of the buttons not sure best way to make sure a new Timestamp is created each press?? 
+                # Cause need to make sure round/phase/things get updated if we are just continuously looping. 
+                # This one might be the exception of we just want to create the timestamp and add it to queue all at the same time 
+                Timestamp(self.timestamp_manager, f'override {self.function} button for {self.door} pressed', time.time()).add_to_queue() 
                 self.flag = True   
 
             if self.stop_threads is True: 

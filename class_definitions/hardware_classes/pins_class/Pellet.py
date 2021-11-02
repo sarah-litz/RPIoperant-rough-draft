@@ -23,13 +23,13 @@ class Pellet():
     # only the pin 'read_pellet' is made as type Pellet 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, dispenser_dict, timestamp_q): 
+    def __init__(self, dispenser_dict, timestamp_manager): 
         #super().__init__(dispenser_dict['name'], dispenser_dict['pin']) # passes the pin name and pin number 
         
         self.pin = dispenser_dict['pin']
         self._gpio_setup_pin()
 
-        self.timestamp_q = timestamp_q
+        self.timestamp_manager = timestamp_manager
         self.name = dispenser_dict['name']
 
         self.servo = dispenser_dict['servo']
@@ -88,7 +88,7 @@ class Pellet():
     def dispense_pellet(self): 
         
         if not self.troughEmpty(): # there is already a pellet, do not dispense
-            self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Skipped Pellet Dispense; Trough Not Empty')
+            self.timestamp_manager.put_item(timestamp=time.time(), event_descriptor='Skipped Pellet Dispense; Trough Not Empty')
             return 'pellet already in trough; skipped dispense', time.time(), False   
         else: # dispense pellet 
             
@@ -102,11 +102,11 @@ class Pellet():
             self.servo_pellet.throttle = self.continuous_servo_speeds['stop'] # stop moving servo 
             if channel: 
                 # a pellet was dispensed  
-                self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Pellet Dispensed')
+                self.timestamp_manager.put_item(timestamp=time.time(), event_descriptor='Pellet Dispensed')
                 return True 
             else: 
                 # timed out, pellet did not get dispensed.
-                self.timestamp_q.put_item(timestamp=time.time(), event_descriptor='Pellet Dispense Failure')
+                self.timestamp_manager.put_item(timestamp=time.time(), event_descriptor='Pellet Dispense Failure')
                 return False 
             
             '''timeout = False; start_time = time.time()

@@ -27,9 +27,9 @@ TIMEOUT = 10 # wait 10 seconds for certain action to happen, and then bail if it
         
 class Door(): 
  
-    def __init__(self, door_dict, door_buttons, timestamp_q, reward = None): # dictionary of pin objects is passed in 
+    def __init__(self, door_dict, door_buttons, timestamp_manager, reward = None): # dictionary of pin objects is passed in 
         
-        self.timestamp_q = timestamp_q
+        self.timestamp_manager = timestamp_manager
 
         self.name = door_dict['name']
         self.type = 'Door'

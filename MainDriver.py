@@ -67,7 +67,7 @@ def run_next_check(module):
             print('sorry, I dont recognzie that input. please only enter a y or an n')
 
 
-
+# STARTUP: first function to be called 
 def startup(): 
     
     # prompt user for experiment input 
@@ -76,7 +76,8 @@ def startup():
     # check if user entered in command line arguments. If entered, then check validity of the arguments. 
         # argument #1 must be name of an input file 
         # argument #2 must be name of a directory where output files will be placed 
-    
+        
+    ## optional input arguments --csv_in and --output_loc are handled by argparse ## 
     parser = argparse.ArgumentParser(description='input io info')
     parser.add_argument('--csv_in', '-i',type = str, 
                     help = 'where is the csv experiments file?', # if user enters -h (for help), displays this string 

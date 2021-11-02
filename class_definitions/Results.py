@@ -25,11 +25,11 @@ from class_definitions.AnalyzeResults import Analysis
 
 class Results(): 
     
-    def __init__(self, csv_input, output_dir, timestamp_q): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
+    def __init__(self, csv_input, output_dir, timestamp_manager): # pass in info from input csv file, and the (optional) directory for where user wants output file to go
         
         ''' requires that an output file will get found or created when a new Results instance is made'''
         self.filepath = self.generate_output_file(csv_input, output_dir)
-        self.timestamp_q = timestamp_q
+        self.timestamp_manager = timestamp_manager
         self.event_lock = threading.Lock()
         self.writer_thread =  threading.Thread(target=self.monitor_for_event, args=(), daemon=True)
         self.stop_threads = False 
@@ -101,11 +101,11 @@ class Results():
         
         while True: 
             self.event_lock.acquire()
-            event = self.timestamp_q.get_item() # if event_queue is empty this will wait for something to be added
+            event = self.timestamp_manager.get_item() # if event_queue is empty this will wait for something to be added
             self.event_lock.release()
             # logging.debug('i am monitoring the event queue mmkay')
             self.record_event(event) # function that writes to the output file 
-            self.timestamp_q.task_done()
+            self.timestamp_manager.task_done()
             
     
                 

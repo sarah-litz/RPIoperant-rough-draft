@@ -28,7 +28,7 @@ class Lever():
     # LEVER TYPE: lever_IDs can be "food", "door_1", or "door_2" 
     # CONTROLLED BY SERVOS ( accessed thru servo_dict in original code )
 
-    def __init__(self, lever_dict, timestamp_q):
+    def __init__(self, lever_dict, timestamp_manager):
 
         self.name = lever_dict['name']
         self.type = 'Lever'
@@ -37,7 +37,7 @@ class Lever():
         self.retracted = lever_dict['retracted']
         self.pin = lever_dict['pin']
         
-        self.timestamp_q = timestamp_q
+        self.timestamp_manager = timestamp_manager
 
         self.all_lever_presses = 0 # num of all presses (including outside of designated timeframe)
         self.monitoring = False 
@@ -64,13 +64,13 @@ class Lever():
         timestamp = time.time()
         time.sleep(0.1)
         self.servo.angle = extend 
-        self.timestamp_q.put_item(timestamp, f'({self.name} lever) Lever Extended')
+        self.timestamp_manager.put_item(timestamp, f'({self.name} lever) Lever Extended')
         return f'{self.name} lever extended', timestamp, True
         
     def retract_lever(self):         
         timestamp = time.time() 
         self.servo.angle = self.retracted 
-        self.timestamp_q.put_item(timestamp, f'({self.name} lever) Lever Retracted')
+        self.timestamp_manager.put_item(timestamp, f'({self.name} lever) Lever Retracted')
         return f'{self.name} lever retracted', timestamp, True 
     
     def execute_callback_funcs(self, isPress): 
@@ -102,7 +102,7 @@ class Lever():
         if presses >= required_presses: 
             print("presses:", presses, "   required_presses:", required_presses)
             timestamp=time.time()
-            self.timestamp_q.put_item(timestamp=timestamp, event_descriptor=f'{presses} Presses Detected ({self.name} lever)')
+            self.timestamp_manager.put_item(timestamp=timestamp, event_descriptor=f'{presses} Presses Detected ({self.name} lever)')
             print(f'{presses} lever presses were detected for {self.name}')
             self.execute_callback_funcs(isPress=True)
             return 'Lever Presses', timestamp, True 

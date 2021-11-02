@@ -1,6 +1,9 @@
 
 #!/usr/bin/python3
 
+# Local Imports 
+from ...Timestamp import Timestamp
+
 # Standard Library Imports 
 import time 
 
@@ -10,11 +13,11 @@ import pigpio
 
 
 class Output(): 
-    def __init__(self, output_dict, timestamp_q): 
+    def __init__(self, output_dict, timestamp_manager): 
 
         self.name = output_dict['name']
 
-        self.timestamp_q = timestamp_q
+        self.timestamp_manager = timestamp_manager
 
         self.pin = output_dict['pin']
         self._gpio_setup_pin() 
@@ -29,11 +32,14 @@ class Output():
     def pulse_sync_line(self, length, descriptor=None): 
         # print("P U L S E")
         # self.results.event_queue.put([round, f'pulse sync line ({length})', time.time()-self.start_time])
-        timestamp = time.time()
-        self.timestamp_q.put_item(time.time(), f'pulse sync line ({length})')
+        
+        timestamp = Timestamp(self.timestamp_manager, f'pulse sync line ({length})', time.time()) # create timestamp object 
+        
         GPIO.output(self.pin, 1)
         time.sleep(length)
         GPIO.output(self.pin, 0)
+
+        timestamp.add_to_queue() # writes timestamp to shared queue of all timestamp 
         if descriptor is not None: 
             return f'pulse sync line, {descriptor} ({length})', timestamp, True
         return f'pulse sync line ({length})', timestamp, True
@@ -69,7 +75,10 @@ class Output():
         self.pi.set_PWM_dutycycle(self.pin, 255/2)
         self.pi.set_PWM_frequency(self.pin, int(hz))
         timestamp = time.time()
-        self.timestamp_q.put_item(timestamp, f'{buzz_type} (length: {length})')
+
+        # LEAVING OFF HERE!! 
+        #  go thru and change all the put items !! Cause now instead we are creating a new Timestamp instance at very start of function and then when something happens we will add it to the timestamp_manager queue by calling timestamp.add_to_queue
+        self.timestamp_manager.put_item(timestamp, f'{buzz_type} (length: {length})')
         time.sleep(int(length))
         self.pi.set_PWM_dutycycle(self.pin, 0) # turn off sound 
         return f'Buzz, {buzz_type}', timestamp, True

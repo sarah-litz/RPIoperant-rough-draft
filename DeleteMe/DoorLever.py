@@ -77,9 +77,9 @@ class Door(Lever):
             if self.door_override[door_ID]:
                 print(f'open {door_ID} stopped due to override!')
             print(f'{door_ID} failed to open!!!')
-            self.timestamp_queue.put('%i, %s open failure, %f'%(self.round, door_ID, time.time()-self.start_time))
+            self.timestamp_managerueue.put('%i, %s open failure, %f'%(self.round, door_ID, time.time()-self.start_time))
         else:
-            self.timestamp_queue.put('%i, %s open finish, %f'%(self.round, door_ID, time.time()-self.start_time))
+            self.timestamp_managerueue.put('%i, %s open finish, %f'%(self.round, door_ID, time.time()-self.start_time))
             self.door_states[door_ID] = False'''
     
     def close_door(self, state_switch_pin): # close the current door. Need the state_switch pin as well, so passing in instance of that also 
